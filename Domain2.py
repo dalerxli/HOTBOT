@@ -190,24 +190,24 @@ if __name__ == '__main__':
         pickle.dump(domain[0][0], f)
     
     newDomain = []
-    for folder, sim in zip(domain.folders, domain):
-        import NewDescription
-        os.chdir(directory)
-        with open(folder + '/Larr.pkl', 'rb') as f:
-            Larr = pickle.load(f)    
-            print folder, Larr[0], len(sim)
-            sim2 = []
-            for ref in sim:
-                ref2 = NewDescription.Description(ref, Larr[0])
-                print ref2['state'][0].dtype.names
-                sim2.append(ref2)
-            sim2 = tuple(sim2)
-        newDomain.append(sim2)
-        
-    newDomain2=DomainTuple(domain=None, extract=((newDomain, domain.folders)))
-    
-    with open('extract2.pkl', 'wb') as f:
-        pickle.dump((newDomain, domain.folders), f)
+#     for folder, sim in zip(domain.folders, domain):
+#         import NewDescription
+#         os.chdir(directory)
+#         with open(folder + '/Larr.pkl', 'rb') as f:
+#             Larr = pickle.load(f)    
+#             print folder, Larr[0], len(sim)
+#             sim2 = []
+#             for ref in sim:
+#                 ref2 = NewDescription.Description(ref, Larr[0])
+#                 print ref2['state'][0].dtype.names
+#                 sim2.append(ref2)
+#             sim2 = tuple(sim2)
+#         newDomain.append(sim2)
+#         
+#     newDomain2=DomainTuple(domain=None, extract=((newDomain, domain.folders)))
+#     
+#     with open('extract2.pkl', 'wb') as f:
+#         pickle.dump((newDomain, domain.folders), f)
                 
     #domain = Domain()
     #domain.importRun('93')

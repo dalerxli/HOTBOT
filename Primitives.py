@@ -329,8 +329,8 @@ if __name__ == '__main__':
                 'specificOperators': specific_operators,
                 }   
     
-    with open('pset.pkl' , 'wb') as f:
-        pickle.dump(psetDict, f)
+#     with open('pset.pkl' , 'wb') as f:
+#         pickle.dump(psetDict, f)
 
         
 # types = {
