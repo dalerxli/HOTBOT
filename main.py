@@ -1,7 +1,6 @@
 
 import operator
 import random
-import math
 import pickle
 import os
 from datetime import datetime
@@ -20,7 +19,7 @@ import scoop.futures as futures
 from Primitives import *
 from storePrimitives import *
 from Domain2 import DomainTuple
-from Description import Description
+from Description import Description, Domain
 from GeneticProgramming import *
 
 #loading domain
@@ -34,7 +33,7 @@ domain = DomainTuple(domain=None, extract=extract)
 directory = '/scratch/mg542/Simulations'
 
 store = '/scratch/mg542/store'
-psetFile = '/home/mg542/Documents/Source/Gas/pset.pkl'
+psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
 atlasesFile = '/scratch/mg542/store/2014-06-23T12:21:08/10:01:37.pkl'
 atlasesFile = None
 
@@ -121,7 +120,7 @@ def selectSVD(atlas, minDiv=1e-2):
         return tools.selSPEA2(atlas, 5)
         #return returnParetoFront(atlas)
     
-    selected = sum(futures.map(selParetoRank, s, V), [])
+    selected = sum(map(selParetoRank, s, V), [])
     
     #Discard Duplicates
     removed = []
@@ -200,8 +199,6 @@ def paretos(checkpoint=None, freq=50):
                 ind.charac = None
                 ind.robustness = None
                 ind.shift = None
-        
-    #hof = tools.HallOfFame()
     
     stats = tools.Statistics(lambda ind: (ind.shift, ind.robustness, ind.svd, ind.size,))#ind.fitness.values)
     stats.register("Atlas", lambda stat: map(lambda x: 

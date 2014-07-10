@@ -11,18 +11,9 @@ import exceptions
 
 from deap import gp
 import numpy as np
-from scipy.stats import moment
+#from scipy.stats import moment
 
 from Description import *
-
-
-
-
-
-# class listBools(np.ndarray):
-#     def __new__(cls, input_array):
-#         obj = np.asarray(input_array, dtype = np.bool).view(cls)
-#         return obj
 
 
 class Primitives(gp.PrimitiveSetTyped):
@@ -58,11 +49,9 @@ class Primitives(gp.PrimitiveSetTyped):
         if ephemerals:
             self.addEphemeral(ephemerals)
                 
-    def generatePrimitives(self, types, operators):
-        """
-        This function generates the set of possible 
-        input and output types for a set of operators
-        """
+    def generatePrimitives(self, types, operators):  
+        #This function generates the set of possible 
+        #input and output types for a set of operators   
         primitiveList = []
         for operator in operators:
             inTypes =  operator[1]
@@ -71,33 +60,43 @@ class Primitives(gp.PrimitiveSetTyped):
             inTypeSet = set()
             inTypeSet.add(tuple(inTypes))
             newInTypeSet = set()
-            
-            #Keep looping while we add different input types
-            #This generates the set of possible input types
-            while newInTypeSet != inTypeSet and not inTypeSet.issubset(set()):
+            while newInTypeSet != inTypeSet:
                 newInTypeSet = copy.copy(inTypeSet)
-                for InType in inTypes:                
+                for InType in inTypes:
+                #Keep looping while we add different input types
                     for element in newInTypeSet:
                         for j, typeElement in enumerate(element):
                             if InType == typeElement:
                                 for type in types[InType]:
                                     elem = list(copy.copy(element))
                                     elem[j] = type
-                                    inTypeSet.add(tuple(elem))
-            
+                                    inTypeSet.add(tuple(elem))       
             #This makes sure if one of the inputs is a list
-            #then the output will be a list.  
+            #then the output will be a list.                        
             for inputType in inTypeSet:
-                if set(types['list']) & set(inputType):         
+                #Checking any primitives using fields
+                if set(types['field']) & set(inputType):
+                    #Checks that there is only one field type present in inputs
+                    if len([type for type in inputType if type in types['field']]) == 1:
+                        print len([type for type in inputType if type in types['field']])
+                        #Check that no lists are present in input types
+                        if not set(types['list']) & set(inputType):
+                            #Adds appropriate primitive
+                            for elem in types['field']:
+                                if elem in inputType:
+                                    primitiveList.append([operator[0], inputType, elem])
+                                    print inputType, elem
+                #Checking any primitive using lists
+                elif set(types['list']) & set(inputType):         
                     for elem in types[retTypes]:
                         if elem in types['list']:
-                            primitiveList.append([operator[0], inputType, elem])
+                            if not set(types['field']) & set(inputType):
+                                primitiveList.append([operator[0], inputType, elem])
+                                print inputType, elem
                 else:
-                    if retTypes not in types['list']:
-                        primitiveList.append([operator[0], inputType, retTypes])
-
+                    if retTypes not in types['list'] and retTypes not in types['field']:
+                        primitiveList.append([operator[0], inputType, retTypes])                    
         return primitiveList        
-        
                 
     def addSpecificPrimitives(self, operators):
         """
@@ -116,11 +115,9 @@ class Primitives(gp.PrimitiveSetTyped):
         for item in ephemerals: 
             self.addEphemeralConstant(*item)
                 
-def generatePrimitives(types, operators):
-    
+def generatePrimitives(types, operators):  
     #This function generates the set of possible 
-    #input and output types for a set of operators
-    
+    #input and output types for a set of operators   
     primitiveList = []
     for operator in operators:
         inTypes =  operator[1]
@@ -139,26 +136,38 @@ def generatePrimitives(types, operators):
                             for type in types[InType]:
                                 elem = list(copy.copy(element))
                                 elem[j] = type
-                                inTypeSet.add(tuple(elem))
-        
+                                inTypeSet.add(tuple(elem))       
         #This makes sure if one of the inputs is a list
         #then the output will be a list.                        
         for inputType in inTypeSet:
-            if set(types['list']) & set(inputType):         
+            #Checking any primitives using fields
+            if set(types['field']) & set(inputType):
+                #Checks that there is only one field type present in inputs
+                if len([type for type in inputType if type in types['field']]) == 1:
+                    print len([type for type in inputType if type in types['field']])
+                    #Check that no lists are present in input types
+                    if not set(types['list']) & set(inputType):
+                        #Adds appropriate primitive
+                        for elem in types['field']:
+                            if elem in inputType:
+                                primitiveList.append([operator[0], inputType, elem])
+                                print inputType, elem
+            #Checking any primitive using lists
+            elif set(types['list']) & set(inputType):         
                 for elem in types[retTypes]:
                     if elem in types['list']:
-                        primitiveList.append([operator[0], inputType, elem])
-                        print inputType, elem
+                        if not set(types['field']) & set(inputType):
+                            primitiveList.append([operator[0], inputType, elem])
+                            print inputType, elem
             else:
-                if retTypes not in types['list']:
-                    primitiveList.append([operator[0], inputType, retTypes])
-                    
+                if retTypes not in types['list'] and retTypes not in types['field']:
+                    primitiveList.append([operator[0], inputType, retTypes])                    
     return primitiveList
 
         
 def safeDiv(left, right):
     try: return left / right
-    except ZeroDivisionError: return 0
+    except ZeroDivisionError: return 0.
     
 def safePower(x1, x2):
     return np.nan_to_num(np.power(x1, x2))
@@ -178,7 +187,7 @@ def safePow(x, y):
     except exceptions.OverflowError:
         return float("inf")
     except exceptions.ZeroDivisionError:
-        return x * 0 * y
+        return x * 0. * y
     
 def vectorX(vec):
     return vec[0]
@@ -211,20 +220,35 @@ def ListDot(a, b):
 def dot(a, b):
     return sum(a*b)
     
-def momentFloat(a, m = 1):
-    return moment(a, m)
-
-def momentVector(a, m = 1):
-    return vector(moment(a, m, axis = 0))
-
-def momentPosition(a, m = 1):
-    return position(moment(a, m, axis = 0))
+# def momentFloat(a, m = 1):
+#     return moment(a, m)
+# 
+# def momentVector(a, m = 1):
+#     return Vector(moment(a, m, axis = 0))
+# 
+# def momentPosition(a, m = 1):
+#     return Position(moment(a, m, axis = 0))
 
 def float10():
     return random.random()*10
 
 def int10():
     return random.randint(0,10)
+
+def largestContour(contours):
+    return contours.largestContour()
+
+def sumPerimeters(contours):
+    return contours.sumPerimeters()
+
+def perimeter(contour):
+    return contour.perimeter()
+
+def area(contour):
+    return contour.area()
+
+def convexHull(contour):
+    return contour.convexHull()
 
 def createPset(**psetDict):
     inputTypes = psetDict['inputTypes']
@@ -242,29 +266,32 @@ def createPset(**psetDict):
     
 
 if __name__ == '__main__':
-    inputTypes = [float, particleState, particleState,
-                  particlePosition, particleVector, numberField]
+    inputTypes = [float, CellTypes, CellStates, CellStates,
+                  CellPositions, CellVectors, Mesh]
     
     referenceTypes = {
-                      'number': float,
-                      'mass': particleState,
-                      'radius': particleState,
-                      'position': particlePosition,
-                      'momentum': particleVector,
-                      'box': numberField,
+                      'number': float, 
+                      'cellType': CellTypes,
+                      'length': CellStates,
+                      'radius': CellStates,
+                      'position': CellPositions,
+                      'direction': CellVectors,
+                      'mesh': Mesh
                       }
     types = {
-             bool: [bool, listBools, ],
-             float: [float, particleState, ],
-             vector: [vector, position, particlePosition, particleVector, ],
-             'list': [listBools, particleState, particlePosition, particleVector, ],
-             'listVector': [particlePosition, particleVector, ],
-             'field': [numberField, ],
+             bool: [bool, ListBools, ],
+             int: [CellTypes, ],
+             float: [float, CellStates, NumberField, Density],
+             Vector: [Vector, Position, CellPositions, CellVectors, ],
+             'list': [ListBools, CellStates, CellPositions, CellVectors, ],
+             'listVector': [CellPositions, CellVectors, ],
+             'field': [NumberField, Density],
+             'contour': [Contour,],
+             'contours': [Contours,],
              }
     
-    operators = [
-                 [np.multiply, (float, float,), float],
-                 [np.multiply, (vector, vector), vector],
+    operators = [[np.multiply, (float, float,), float],
+                 [np.multiply, (Vector, Vector), Vector],
                  [np.add, (float, float,), float],
                  [np.subtract, [float, float, ], float],
                  [safeDiv, [float, float, ], float],
@@ -276,44 +303,61 @@ if __name__ == '__main__':
                  [np.abs, [float, ], float],
                  [np.greater, [float, float, ], bool],
                  [np.less, [float, float, ], bool],
-                 [np.linalg.norm, [vector, ], float],
-                 [np.cross, [vector, vector, ], vector],
-                 #[np.dot, [vector, vector, ], float],
-                 [identity, [vector, ], vector],
+                 [np.linalg.norm, [Vector, ], float],
+                 [np.cross, [Vector, Vector, ], Vector],
+                 #[identity, [Vector, ], Vector],
                  ]
     
     specific_operators = [
-                          #[np.dot, [vector, vector, ], float],
-                          #[np.dot, [vector, position, ], float],
-                          #[np.dot, [particleVector, position, ], float],
-                          #[np.dot, [vector, particlePosition, ], float],
-                          #[np.dot, [particleVector, particlePosition, ], float],
-                          [vectorX, [vector, ], float],
-                          [vectorY, [vector, ], float],
-                          [vectorZ, [vector, ], float],
-                          [vectorX, [position, ], float],
-                          [vectorY, [position, ], float],
-                          [vectorZ, [position, ], float],
-                          [lVectorX, [particleVector, ], particleState],
-                          [lVectorY, [particleVector, ], particleState],
-                          [lVectorZ, [particleVector, ], particleState],
-                          [lVectorX, [particlePosition, ], particleState],
-                          [lVectorY, [particlePosition, ], particleState],
-                          [lVectorZ, [particlePosition, ], particleState],
-                          [np.sum, [particleState, ], float],
-                          [sumVector, [particleVector,], vector],
-                          [sumVector, [particlePosition,], position],
+                          [np.dot, [Vector, Vector, ], float],
+                          [np.dot, [Vector, Position, ], float],
+                          [np.dot, [CellVectors, Position, ], CellStates],
+                          [np.dot, [Vector, CellPositions, ], CellStates],
+                          [np.dot, [CellVectors, CellPositions, ], CellStates],
+                          [vectorX, [Vector, ], float],
+                          [vectorY, [Vector, ], float],
+                          [vectorZ, [Vector, ], float],
+                          [vectorX, [Position, ], float],
+                          [vectorY, [Position, ], float],
+                          [vectorZ, [Position, ], float],
+                          [lVectorX, [CellVectors, ], CellStates],
+                          [lVectorY, [CellVectors, ], CellStates],
+                          [lVectorZ, [CellVectors, ], CellStates],
+                          [lVectorX, [CellPositions, ], CellStates],
+                          [lVectorY, [CellPositions, ], CellStates],
+                          [lVectorZ, [CellPositions, ], CellStates],
+                          [np.sum, [CellStates, ], float],
+                          [sumVector, [CellVectors,], Vector],
+                          [sumVector, [CellPositions,], Position],
                           [if_then_else, [bool, float, float,], float],
-                          # [momentFloat, [particleState, int], float],
-                          # [momentVector, [particleVector, int], vector],
-                          # [momentPosition, [particlePosition, int], position],
+                          [NumberField, [CellPositions, CellStates, Mesh], NumberField],
+                          [NumberField, [CellPositions, CellStates, Mesh, CellTypes, CellType], NumberField],
+                          [Density, [CellPositions, Mesh,], Density],
+                          [Density, [CellPositions, Mesh, CellTypes, CellType], Density],
+                          [densityMultiply, [Density, Density], Density],
+                          [densityMultiply, [NumberField, NumberField], NumberField],
+                          [densityMultiply, [Density, NumberField], Density],
+                          [densityMultiply, [NumberField, Density], NumberField],
+                          [Contours, [NumberField, float, Mesh], Contours],
+                          [Contours, [Density, float, Mesh], Contours],
+                          [largestContour, [Contours,], Contour],
+                          [sumPerimeters, [Contours,], float],
+                          [perimeter, [Contour,], float],
+                          [area, [Contour,], float],
+                          [convexHull, [Contour,], Contour],
+                          # [momentFloat, [CellStates, int], float],
+                          # [momentVector, [CellVectors, int], vector],
+                          # [momentPosition, [CellPositions, int], Position],
                           ]
     
     terminals = [[True, bool],
                  [False, bool], ]
     
-    ephemerals = [["rand10", lambda: random.random() * 10, float], ]
-    ephemerals = [["int10", lambda: random.random() * 10, int], ]
+
+    ephemerals = [["rand10", lambda: random.random() * 10, float], 
+                  ["int10", lambda: random.random() * 10, int], 
+                  ["cellType", lambda:CellType(), CellType], ]
+
     
     pset = Primitives("MAIN", inputTypes, float, 'ARG')
     pset.addPrimitives(types, operators, terminals, ephemerals)
@@ -329,75 +373,9 @@ if __name__ == '__main__':
                 'specificOperators': specific_operators,
                 }   
     
-#     with open('pset.pkl' , 'wb') as f:
-#         pickle.dump(psetDict, f)
+    operators = [[np.multiply, (float, float,), float],]
+    prim = generatePrimitives(types, operators)
 
-        
-# types = {
-#           bool: [bool,], # listBools],
-#           float: [float, particleState],
-#           'list': [particlePosition, particleState, particleVector], # listBools]
-#           'field': [numberField,]
-#           }
-#  
-# operators = [
-#              [operator.mul, (float, float), float],
-#              [operator.add, (float, float), float],
-#              [operator.sub, [float, float], float],
-#              [safeDiv, [float, float], float],
-#              [operator.neg, [float], float],
-#              #[safePow, [float, float], float],
-#              [np.sqrt, [float,], float],
-#              ]
-#  
-# specific_operators = [
-#                       #[operator.lt, [float, float], bool],
-#                       #[operator.gt, [float, float], bool],
-#                       [sum, [particleState,], float],
-#                       #[if_then_else, [bool, float, float], float],
-#                       #[doubleValue, [float, float,], twinFloat]
-#                       ]
-# 
-# terminals = [
-#              [True, bool],
-#              [False, bool],
-#              #[twinFloat(0,0), twinFloat],
-#              ]
-#  
-# ephemerals = [
-#               ["rand10", lambda: random.random() * 10, float],
-#               #["randTwin", lambda: twinFloat(random.random(),random.random(),), twinFloat]
-#               ]
-# 
-# if __name__ == '__main__':
-#     
-#     ## This generates the set of all possible input types.
-#     for operator in operators:
-#         inTypes =  operator[1]
-#         retTypes = operator[2]
-#         #create set of input types
-#         inTypeSet = set()
-#         inTypeSet.add(tuple(inTypes))
-#         newInTypeSet = set()
-#         while newInTypeSet != inTypeSet:
-#             newInTypeSet = copy.copy(inTypeSet)
-#             for InType in inTypes:
-#             #Keep looping while we add different input types
-#                 for element in newInTypeSet:
-#                     for j, typeElement in enumerate(element):
-#                         if InType == typeElement:
-#                             for type in types[InType]:
-#                                 elem = list(copy.copy(element))
-#                                 elem[j] = type
-#                                 inTypeSet.add(tuple(elem))
-#         for inputType in inTypeSet:
-#             print [operator[0], inputType, retTypes]
-#             
-#     generatePrimitives(types, operators)        
-# 
-#     pset = Primitives("MAIN", (particleState,), float, 'ARG') 
-                
-       
 
 
             

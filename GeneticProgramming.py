@@ -29,8 +29,7 @@ def evalCharacteristic(individual, domain, toolbox, out=False):
     '''
     mapping = toolbox.compile(individual)
     domainCharac = domain.evalCharacteristics(mapping)
-    #individual.charac = domainCharac
-    #if out:
+
     return domainCharac
 
 def evalDomainSD(individual):
@@ -177,12 +176,7 @@ def selectSVD(atlas, minDiv=1e-2):
             ind.svd = norm
             ind.size = len(ind)
         map(calcFitness, vValues, atlas)            
-#         for uVal, ind in zip(vValues, atlas):
-#             shift, robust = ind.shift, ind.robustness
-#             norm = np.abs(uVal)
-#             ind.fitness.values = shift*norm, robust*norm, len(ind)
-#             ind.svd = uVal
-#             ind.size = len(ind)
+
         nRet = 5
         if len(atlas) < nRet:
             nRet = len(atlas)
@@ -306,16 +300,21 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             validCharac = np.isfinite(individual.charac['characteristic'].sum())
             validNorm = not np.isclose(individual.domainSD + np.abs(individual.domainAv),0)
             validRobust = individual.robustness < 1e10
-            return validCharac and validNorm and validNorm
+            return validCharac and validNorm and validRobust
         atlases = toolbox.map(lambda x: filter(filterInd, x), atlases)
        
         if type(minDiv) is tuple:
             a, b = minDiv
             adaptiveMinDiv = True
+        else:
+            minDivList = [ minDiv for atlas in atlases]
+                
         if adaptiveMinDiv:
-            minDiv = 1 - 10**( - paretoN**a / b) 
+            minDiv = 1 - 10**( - paretoN**a / b)
+            minDivList = [1 - 10**( - paretoN**a / b) for atlas in atlases]
         
-        selectedAtlases = toolbox.map(lambda atlas: selectSVD(atlas, minDiv), atlases)
+        
+        selectedAtlases = toolbox.multiMap(lambda atlas, minD: selectSVD(atlas, minD), atlases, minDivList)
         
         # Match size of migrants to pareto fronts
         paretoN = sum(map(len, selectedAtlases))

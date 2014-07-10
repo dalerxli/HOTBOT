@@ -8,10 +8,11 @@ import copy
 import operator
 import random
 import exceptions
+import pickle
 
 from deap import gp
 import numpy as np
-from scipy.stats import moment
+#from scipy.stats import moment
 
 from Description import *
 from Primitives import *
@@ -37,28 +38,32 @@ def loadPset(filename):
     
 
 
-inputTypes = [float, particleState, particleState,
-              particlePosition, particleVector, float, float, float]
-
+inputTypes = [float, CellTypes, CellStates, CellStates,
+              CellPositions, CellVectors, Mesh]
+    
 referenceTypes = {
-                  'number': float,
-                  'mass': particleState,
-                  'radius': particleState,
-                  'position': particlePosition,
-                  'momentum': particleVector,
+                  'number': float, 
+                  'cellType': CellTypes,
+                  'length': CellStates,
+                  'radius': CellStates,
+                  'position': CellPositions,
+                  'direction': CellVectors,
+                  'mesh': Mesh
                   }
 types = {
-         bool: [bool, listBools, ],
-         float: [float, particleState, ],
-         vector: [vector, position, particlePosition, particleVector, ],
-         'list': [listBools, particleState, particlePosition, particleVector, ],
-         'listVector': [particlePosition, particleVector, ],
-         'field': [numberField, ],
+         bool: [bool, ListBools, ],
+         int: [CellTypes, ],
+         float: [float, CellStates, NumberField, Density],
+         Vector: [Vector, Position, CellPositions, CellVectors, ],
+         'list': [ListBools, CellStates, CellPositions, CellVectors, ],
+         'listVector': [CellPositions, CellVectors, ],
+         'field': [NumberField, Density],
+         'contour': [Contour,],
+         'contours': [Contours,],
          }
 
-operators = [
-             [np.multiply, (float, float,), float],
-             [np.multiply, (vector, vector), vector],
+operators = [[np.multiply, (float, float,), float],
+             [np.multiply, (Vector, Vector), Vector],
              [np.add, (float, float,), float],
              [np.subtract, [float, float, ], float],
              [safeDiv, [float, float, ], float],
@@ -70,44 +75,63 @@ operators = [
              [np.abs, [float, ], float],
              [np.greater, [float, float, ], bool],
              [np.less, [float, float, ], bool],
-             [np.linalg.norm, [vector, ], float],
-             [np.cross, [vector, vector, ], vector],
-             #[np.dot, [vector, vector, ], float],
-             [identity, [vector, ], vector],
+             [np.linalg.norm, [Vector, ], float],
+             [np.cross, [Vector, Vector, ], Vector],
+             #[identity, [Vector, ], Vector],
              ]
 
 specific_operators = [
-                      [dot, [vector, vector, ], float],
-                      [dot, [vector, position, ], float],
-                      [ListDot, [particleVector, position, ], particleState],
-                      [ListDot, [vector, particlePosition, ], particleState],
-                      [ListDot, [particleVector, particlePosition, ], particleState],
-                      [vectorX, [vector, ], float],
-                      [vectorY, [vector, ], float],
-                      [vectorZ, [vector, ], float],
-                      [vectorX, [position, ], float],
-                      [vectorY, [position, ], float],
-                      [vectorZ, [position, ], float],
-                      [lVectorX, [particleVector, ], particleState],
-                      [lVectorY, [particleVector, ], particleState],
-                      [lVectorZ, [particleVector, ], particleState],
-                      [lVectorX, [particlePosition, ], particleState],
-                      [lVectorY, [particlePosition, ], particleState],
-                      [lVectorZ, [particlePosition, ], particleState],
-                      [np.sum, [particleState, ], float],
-                      [sumVector, [particleVector,], vector],
-                      [sumVector, [particlePosition,], position],
+                      [np.dot, [Vector, Vector, ], float],
+                      [np.dot, [Vector, Position, ], float],
+                      [np.dot, [CellVectors, Position, ], CellStates],
+                      [np.dot, [Vector, CellPositions, ], CellStates],
+                      [np.dot, [CellVectors, CellPositions, ], CellStates],
+                      [vectorX, [Vector, ], float],
+                      [vectorY, [Vector, ], float],
+                      [vectorZ, [Vector, ], float],
+                      [vectorX, [Position, ], float],
+                      [vectorY, [Position, ], float],
+                      [vectorZ, [Position, ], float],
+                      [lVectorX, [CellVectors, ], CellStates],
+                      [lVectorY, [CellVectors, ], CellStates],
+                      [lVectorZ, [CellVectors, ], CellStates],
+                      [lVectorX, [CellPositions, ], CellStates],
+                      [lVectorY, [CellPositions, ], CellStates],
+                      [lVectorZ, [CellPositions, ], CellStates],
+                      [np.sum, [CellStates, ], float],
+                      [sumVector, [CellVectors,], Vector],
+                      [sumVector, [CellPositions,], Position],
                       [if_then_else, [bool, float, float,], float],
-                      # [momentFloat, [particleState, int], float],
-                      # [momentVector, [particleVector, int], vector],
-                      # [momentPosition, [particlePosition, int], position],
+                      [NumberField, [CellPositions, CellStates, Mesh], NumberField],
+                      [NumberField, [CellPositions, CellStates, Mesh, CellTypes, CellType], NumberField],
+                      [Density, [CellPositions, Mesh,], Density],
+                      [Density, [CellPositions, Mesh, CellTypes, CellType], Density],
+                      [densityMultiply, [Density, Density], Density],
+                      [densityMultiply, [NumberField, NumberField], NumberField],
+                      [densityMultiply, [Density, NumberField], Density],
+                      [densityMultiply, [NumberField, Density], NumberField],
+                      [Contours, [NumberField, float, Mesh], Contours],
+                      [Contours, [Density, float, Mesh], Contours],
+                      [largestContour, [Contours,], Contour],
+                      [sumPerimeters, [Contours,], float],
+                      [perimeter, [Contour,], float],
+                      [area, [Contour,], float],
+                      [convexHull, [Contour,], Contour],
+                      # [momentFloat, [CellStates, int], float],
+                      # [momentVector, [CellVectors, int], vector],
+                      # [momentPosition, [CellPositions, int], Position],
                       ]
 
 terminals = [[True, bool],
              [False, bool], ]
 
-ephemerals = [["rand10", float10, float], 
-              ["int10", int10, int], ]
+
+ephemerals = [
+              ["rand10", float10, float], 
+              ["int10", int10, int], 
+              ["cellType", CellType, CellType],
+              ]
+
  
 if __name__ == '__main__':   
     pset = Primitives("MAIN", inputTypes, float, 'ARG')
@@ -124,5 +148,5 @@ if __name__ == '__main__':
                 'specificOperators': specific_operators,
                 }   
     
-    with open('/home/mg542/Documents/Source/Gas/pset.pkl' , 'wb') as f:
+    with open('/home/mg542/Source/HOTBOT/pset.pkl' , 'wb') as f:
         pickle.dump(psetDict, f)

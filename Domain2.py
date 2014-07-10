@@ -4,7 +4,6 @@ Created on 21 May 2014
 @author: mg542
 '''
 
-from collections import OrderedDict, namedtuple
 import pickle
 import os
 import operator
@@ -13,34 +12,13 @@ import numpy as np
 
 from Description import Description
 
-
 directory = '/scratch/mg542/Simulations'
 
 names = ['time', 'state']
 formats = ['float64', 'object']
 dtype = dict(names=names, formats=formats)
 
-class numberField(np.ndarray):
-    
-    def __new__(cls, input_array, XYZ):
-        # Input array is an already formed ndarray instance
-        # We first cast to be our class type
-        obj = np.asarray(input_array, dtype = np.float).view(cls)
-        # add the new attribute to the created instance
-        obj.XYZ = XYZ
-
-        # Finally, we must return the newly created object:
-        return obj
-
-    def __array_finalize__(self,obj):
-        # reset the attribute from passed original object
-        self.XYZ = getattr(obj, 'XYZ', None)
-        # We do not need to return anything
-
-
-        
-
-mapping = lambda x1, x2, x3, x4, x5, x6, x7, x8: np.mean(x2)           
+mapping = lambda x1, x2, x3, x4, x5, x6, x7, x8: np.mean(x4)           
 
 def domainTuple(domain):
     foldersNames = domain.keys()
