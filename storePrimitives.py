@@ -83,9 +83,9 @@ operators = [[np.multiply, (float, float,), float],
 specific_operators = [
                       [np.dot, [Vector, Vector, ], float],
                       [np.dot, [Vector, Position, ], float],
-                      [np.dot, [CellVectors, Position, ], CellStates],
-                      [np.dot, [Vector, CellPositions, ], CellStates],
-                      [np.dot, [CellVectors, CellPositions, ], CellStates],
+                      #[np.dot, [CellVectors, Position, ], CellStates],
+                      #[np.dot, [Vector, CellPositions, ], CellStates],
+                      #[np.dot, [CellVectors, CellPositions, ], CellStates],
                       [vectorX, [Vector, ], float],
                       [vectorY, [Vector, ], float],
                       [vectorZ, [Vector, ], float],
@@ -117,6 +117,13 @@ specific_operators = [
                       [perimeter, [Contour,], float],
                       [area, [Contour,], float],
                       [convexHull, [Contour,], Contour],
+                      [centroidX, [Contour,], float],
+                      [centroidY, [Contour,], float],
+                      [solidity, [Contour,], float],
+                      [nematicOrder, [CellPositions, CellVectors, Mesh,], Contour],
+                      [nematicOrder, [CellPositions, CellVectors, Mesh, CellTypes, CellType], Contour],
+                      [adfContour, [CellPositions, Mesh,], Contour],
+                      [adfContour, [CellPositions, Mesh, CellTypes, CellType], Contour],
                       # [momentFloat, [CellStates, int], float],
                       # [momentVector, [CellVectors, int], vector],
                       # [momentPosition, [CellPositions, int], Position],
@@ -148,5 +155,5 @@ if __name__ == '__main__':
                 'specificOperators': specific_operators,
                 }   
     
-    with open('/home/mg542/Source/HOTBOT/pset.pkl' , 'wb') as f:
+    with open('/home/mg542/Documents/Source/HOTBOT/pset.pkl' , 'wb') as f:
         pickle.dump(psetDict, f)

@@ -2,6 +2,7 @@
 import operator
 import random
 import pickle
+import cPickle
 import os
 from datetime import datetime
 from collections import OrderedDict
@@ -18,34 +19,22 @@ import scoop.futures as futures
 
 from Primitives import *
 from storePrimitives import *
-from Domain2 import DomainTuple
 from Description import Description, Domain
 from GeneticProgramming import *
 
 #loading domain
-extractFile = '/scratch/mg542/Simulations/extract2.pkl'
-with open(extractFile, 'rb') as f:
-    extract = pickle.load(f)
-
-domain = DomainTuple(domain=None, extract=extract)
-
-
-directory = '/scratch/mg542/Simulations'
-
+domainFile = '/scratch/mg542/CellModeller/domain.pkl'
+psetFile = '/home/mg542/Documents/Source/HOTBOT/pset.pkl'
 store = '/scratch/mg542/store'
-psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
 atlasesFile = '/scratch/mg542/store/2014-06-23T12:21:08/10:01:37.pkl'
 atlasesFile = None
-
-#Loading Primitives
-pset = loadPset(psetFile)
 
 nAtlases = 2
 nSwaps = 3
 nMappings = 300
 ngen = 30000
 
-checkFreq = 100
+checkFreq = 10
 
 treeMin = 2
 treeMax = 5
@@ -59,6 +48,17 @@ mutpbEphemeral = 0.4
 
 #Adaptive diversity scaling
 minDiv = (0.6, 500) #1e-2
+
+#Loading Primitives
+print 'Starting'
+pset = loadPset(psetFile)
+print 'Loaded Primitives, loading Domain'
+
+raise
+
+with open(domainFile, 'rb') as f:
+    domain = cPickle.load(f)
+print 'Loaded Domain'
 
 
 creator.create("FitnessMulti", base.Fitness, weights=(1.0, -1.0, 1.0, -1.0))
@@ -86,8 +86,12 @@ def evalCharacteristic(individual):
     This function applies a mapping to the domain of propagations
     returning the domain of characteristics
     '''
-    mapping = gp.compile(individual, pset)
-    domainCharac = domain.evalCharacteristics(mapping)
+    try:
+        mapping = gp.compile(individual, pset)
+        domainCharac = domain.evalCharacteristics(mapping)
+    except:
+        mapping = lambda ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6: np.inf
+        domainCharac = domain.evalCharacteristics(mapping)
     return domainCharac
 
 def selectSVD(atlas, minDiv=1e-2):

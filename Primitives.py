@@ -78,21 +78,21 @@ class Primitives(gp.PrimitiveSetTyped):
                 if set(types['field']) & set(inputType):
                     #Checks that there is only one field type present in inputs
                     if len([type for type in inputType if type in types['field']]) == 1:
-                        print len([type for type in inputType if type in types['field']])
+                        #print len([type for type in inputType if type in types['field']])
                         #Check that no lists are present in input types
                         if not set(types['list']) & set(inputType):
                             #Adds appropriate primitive
                             for elem in types['field']:
                                 if elem in inputType:
                                     primitiveList.append([operator[0], inputType, elem])
-                                    print inputType, elem
+                                    #print inputType, elem
                 #Checking any primitive using lists
                 elif set(types['list']) & set(inputType):         
                     for elem in types[retTypes]:
                         if elem in types['list']:
                             if not set(types['field']) & set(inputType):
                                 primitiveList.append([operator[0], inputType, elem])
-                                print inputType, elem
+                                #print inputType, elem
                 else:
                     if retTypes not in types['list'] and retTypes not in types['field']:
                         primitiveList.append([operator[0], inputType, retTypes])                    
@@ -144,21 +144,21 @@ def generatePrimitives(types, operators):
             if set(types['field']) & set(inputType):
                 #Checks that there is only one field type present in inputs
                 if len([type for type in inputType if type in types['field']]) == 1:
-                    print len([type for type in inputType if type in types['field']])
+                    #print len([type for type in inputType if type in types['field']])
                     #Check that no lists are present in input types
                     if not set(types['list']) & set(inputType):
                         #Adds appropriate primitive
                         for elem in types['field']:
                             if elem in inputType:
                                 primitiveList.append([operator[0], inputType, elem])
-                                print inputType, elem
+                                #print inputType, elem
             #Checking any primitive using lists
             elif set(types['list']) & set(inputType):         
                 for elem in types[retTypes]:
                     if elem in types['list']:
                         if not set(types['field']) & set(inputType):
                             primitiveList.append([operator[0], inputType, elem])
-                            print inputType, elem
+                            #print inputType, elem
             else:
                 if retTypes not in types['list'] and retTypes not in types['field']:
                     primitiveList.append([operator[0], inputType, retTypes])                    
@@ -249,6 +249,54 @@ def area(contour):
 
 def convexHull(contour):
     return contour.convexHull()
+
+def densityMultiply(dens1, dens2):
+    dens2 = reMesh(dens1, dens2)
+    return dens1 * dens2
+
+def densityAdd(dens1, dens2):
+    dens2 = reMesh(dens1, dens2)
+    return dens1 + dens2
+
+def densityDivide(dens1, dens2):
+    dens2 = reMesh(dens1, dens2)
+    return dens1 / dens2
+
+def centroidX(contour):
+    pos = contour.centroid()
+    return pos[0]
+
+def centroidY(contour):
+    pos = contour.centroid()
+    return pos[1]
+
+def solidity(contour):
+    area = contour.area()
+    hullArea = contour.convexHull().area()
+    return float(area) / hullArea
+    
+def orientation(contour):
+    (x,y),(MA,ma),angle = contour.fitEllipse()
+    return angle
+
+def majorAxis(contour):
+    (x,y),(MA,ma),angle = contour.fitEllipse()
+    return Ma
+
+def minorAxis(contour):
+    (x,y),(MA,ma),angle = contour.fitEllipse()
+    return ma
+
+def nematicOrder(cellPositions, cellDirection, mesh, types=None, cellType=None):
+    p2 = 1.5 * np.cos(cellDirection[:,0])**2 - 0.5
+    nOrder = NumberField(cellPositions, p2, mesh, types, cellType)
+    return nOrder
+
+def adfContour(cellPositions, mesh, types=None, cellType=None):
+    density = Density(cellPositions, mesh, types, cellType)
+    contours = Contours(density, 1, mesh)
+    contour = contours.largestContour()
+    return contour
 
 def createPset(**psetDict):
     inputTypes = psetDict['inputTypes']

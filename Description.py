@@ -14,8 +14,8 @@ from random import randint
 from CellModeller.CellState import CellState
 
 
-directory = '/scratch/mg542/Data/CellModeller'
-pickleFile = '/scratch/mg542/Data/CellModeller/1/20140704-204113/step-00550.pickle'
+directory = '/scratch/mg542/CellModeller'
+pickleFile = '/scratch/mg542/CellModeller/1/20140704-204113/step-00600.pickle'
 
 class Position(np.ndarray):
     def __new__(cls, input_array):
@@ -64,7 +64,24 @@ class Mesh(np.ndarray):
     def __new__(cls, input_array):
         obj = np.asarray(input_array, dtype = np.float).view(cls)
         return obj    
-        
+
+def findMesh(state, gridsize):
+    #this calculates an appropriate mesh for a given state
+    positions = state[0]['position']
+    Xpos = positions[:,0]
+    Ypos = positions[:,1]
+    maxX, minX = np.max(Xpos), np.min(Xpos)
+    maxY, minY = np.max(Ypos), np.min(Ypos)
+    gridsize = float(gridsize)
+    nX = int((maxX-minX)/gridsize) + 3
+    nY = int((maxY-minY)/gridsize) + 3
+    center = (maxX+minX)/2., (maxY+minY)/2.
+    extentX = center[0] - nX*gridsize/2., center[0] + nX*gridsize/2.
+    extentY = center[1] - nY*gridsize/2., center[1] + nY*gridsize/2.
+    Xrange = np.arange(*extentX + (gridsize,))
+    Yrange = np.arange(*extentY + (gridsize,))
+    return extentX + extentY + (gridsize,)
+
 def scale(pos, mesh):
     xmin, ymin, scale = mesh[0], mesh[2], float(mesh[4])
     x = pos[0] * scale + xmin
@@ -85,17 +102,43 @@ def reMesh(dens1, dens2):
     return dens2
 
 def densityMultiply(dens1, dens2):
-    dens2 = reMesh(dens1, dens2)
+    #dens2 = reMesh(dens1, dens2)
     return dens1 * dens2
 
 def densityAdd(dens1, dens2):
-    dens2 = reMesh(dens1, dens2)
+    #dens2 = reMesh(dens1, dens2)
     return dens1 + dens2
 
 def densityDivide(dens1, dens2):
-    dens2 = reMesh(dens1, dens2)
+    #dens2 = reMesh(dens1, dens2)
     return dens1 / dens2
 
+def centroidX(contour):
+    pos = contour.centroid()
+    return pos[0]
+
+def centroidY(contour):
+    pos = contour.centroid()
+    return pos[1]
+
+def solidity(contour):
+    area = contour.area()
+    hullArea = contour.convexHull().area()
+    return float(area) / hullArea
+    
+def orientation(contour):
+    (x,y),(MA,ma),angle = contour.fitEllipse()
+    return angle
+
+def majorAxis(contour):
+    (x,y),(MA,ma),angle = contour.fitEllipse()
+    return Ma
+
+def minorAxis(contour):
+    (x,y),(MA,ma),angle = contour.fitEllipse()
+    return ma
+
+    
 class NumberField(np.ndarray):
     
     def __new__(cls, positions, cellStates, mesh, types = None, cellType=None):
@@ -181,9 +224,12 @@ class Contours(list):
         numberfield = (numberField - numberField.min()) * scale
         im = np.array(numberField, dtype=np.uint8)
         ret, thresh = cv2.threshold(im,threshold,256,cv2.THRESH_BINARY)
-        contours, hierarchy = cv2.findContours(im,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         self.hierarchy = hierarchy
-        self[:] = map(lambda contour: Contour(contour, mesh), contours)
+        if len(contours) == 0:
+            self[:] = [Contour([], mesh),]
+        else:
+            self[:] = map(lambda contour: Contour(contour, mesh), contours)
         
     def plot(self, show=False):
         import matplotlib.pyplot as plt
@@ -202,8 +248,11 @@ class Contours(list):
         return sum(self.perimeters())
     
     def largestContour(self):
-        maxI = np.argmax(self.areas())
-        return self[maxI]
+        if len(self) == 0:
+            return Contour([], self.mesh)
+        else:
+            maxI = np.argmax(self.areas())
+            return self[maxI]
 
 class Contour(np.ndarray):
     
@@ -216,35 +265,64 @@ class Contour(np.ndarray):
         self.scale = float(mesh[4])
         
     def perimeter(self):
-        return cv2.arcLength(self, True) * self.scale
+        if len(self) == 0:
+            return 0
+        else:
+            return cv2.arcLength(self, True) * self.scale
     
     def area(self):
-        return cv2.contourArea(self) * self.scale **2
+        if len(self) == 0:
+            return 0
+        else:
+            return cv2.contourArea(self) * self.scale **2
     
     def moments(self):
-        return cv2.moments(self), self.mesh
+        if len(self) == 0:
+            M = {'m00': 0,'m01': 0,'m02': 0,'m03': 0, 'm10': 0,'m11': 0,'m12': 0,'m20': 0,'m21': 0,'m30': 0,'mu02': 0, 'mu03': 0,'mu11': 0, 'mu12': 0, 'mu20': 0,}
+            return M, self.mesh
+        else:
+            return cv2.moments(self), self.mesh
+    
+    def centroid(self):
+        M = self.moments()[0]
+        x = np.divide(M['m10'], M['m00'])
+        y = np.divide(M['m01'], M['m00'])
+        pos = scale((x,y), self.mesh)
+        return pos
     
     def convexHull(self):
-        return Contour(cv2.convexHull(self), self.mesh)
+        if len(self) == 0:
+            return Contour([], self.mesh)
+        else:
+            return Contour(cv2.convexHull(self), self.mesh)
     
     def encloseRectangle(self):
-        pos, (w, h), angle = cv2.minAreaRect(self)
-        (x, y) = scale(pos, self.mesh)
-        w, h  = w*self.scale, h*self.scale
-        return (x, y), (w, h), angle
+        if len(self) == 0:
+            return (0,0), (0,0), 0
+        else:
+            pos, (w, h), angle = cv2.minAreaRect(self)
+            (x, y) = scale(pos, self.mesh)
+            w, h  = w*self.scale, h*self.scale
+            return (x, y), (w, h), angle
 
     def encloseCircle(self):
-        pos,radius = cv2.minEnclosingCircle(self)
-        (x,y) = scale(pos, self.mesh)
-        radius *= self.mesh
-        return (x,y), radius
+        if len(self) == 0:
+            return (0,0), 0
+        else:
+            pos,radius = cv2.minEnclosingCircle(self)
+            (x,y) = scale(pos, self.mesh)
+            radius *= self.mesh
+            return (x,y), radius
     
     def fitEllipse(self):
-        #Returns rotated rectangle which encloses ellipse
-        pos, (w, h), angle = cv2.fitEllipse(self)
-        (x, y) = scale(pos, self.mesh)
-        w, h  = w*self.scale, h*self.scale
-        return (x, y), (w, h), angle
+        if len(self) == 0:
+            return (0,0), (0,0), 0
+        else:
+            #Returns rotated rectangle which encloses ellipse
+            pos, (w, h), angle = cv2.fitEllipse(self)
+            (x, y) = scale(pos, self.mesh)
+            w, h  = w*self.scale, h*self.scale
+            return (x, y), (w, h), angle
         
 class State(np.ndarray):
     
@@ -282,12 +360,18 @@ class State(np.ndarray):
         N = len(cellStates)
         states = map(returnCellState, cellStates)
         
+        calcMesh = False
         if mesh is None:
             maxL = max([max(np.abs(cellState.pos)) for cellState in cellStates]) * 1.05
             stepL =  2 * maxL / 50
             mesh = (-maxL, maxL, -maxL, maxL, stepL,)
+            calcMesh = True
             
         self[0] = tuple([N,] + zip(*states) + [mesh,])
+        
+        if calcMesh:
+            mesh = findMesh(self, 7)
+            self[0]['mesh'][:] = mesh
     
     def loadFile(self, pickleFile, mesh=None):
         '''
@@ -360,10 +444,18 @@ class Domain(tuple):
         workDir = os.getcwd()
         os.chdir(domainFolder)
         folders = [folder for folder in os.listdir(domainFolder) if os.path.isdir(folder)]
+        print folders
         def convertFolder(folder):
-            pickleFolders = os.listdir(folder)
-            pickleFolders = map(lambda dir: os.path.join(domainFolder, folder, dir), pickleFolders)
-            return tuple(map(lambda x: Description(folder=x), pickleFolders))
+            fullPath = os.path.join(domainFolder, folder)
+            os.chdir(fullPath)
+            pickleFolders = [pklfolder for pklfolder in os.listdir(fullPath) if os.path.isdir(pklfolder)]
+            pickleFolders = map(lambda name: os.path.join(fullPath, name), pickleFolders)
+            try:
+                descriptions = [Description(folder=pklfolder) for pklfolder in pickleFolders]
+            except:
+                print folder, pklfolder, fullPath, pickleFolders
+                descriptions = [folder, pklfolder, fullPath]
+            return tuple(descriptions)
         
         newDomain = map(convertFolder, folders)
         os.chdir(workDir)
@@ -395,7 +487,7 @@ class Domain(tuple):
         nsim = len(self[0])
         #assert filter(lambda x, y: x == y * x, map(len, self)), 'Number of simulations not constant'
         nfolder = len(self.folders)
-        time = self[0][0]['time']
+        time = self[0][0].times
         ntime = len(time)
         shape = (nsim, ntime)
         formats = ['a5', ('float64', ntime), ('float64', shape)]
@@ -404,8 +496,6 @@ class Domain(tuple):
         
         def mapSim(sim, mapping):
             evalSim = map(lambda x: x.evalCharacteristic(mapping)['characteristic'], sim)
-#                 charac = np.array([run['characteristic'] for run in evalSim])
-#                 time = [run['time'] for run in evalSim]
             return evalSim
         
         charac['characteristic'] = map(lambda x: mapSim(x, mapping), self)
@@ -415,13 +505,16 @@ class Domain(tuple):
         return charac
     
 if __name__ == '__main__':   
-    pickleFile = 'Domain/example.pkl'
-    folder = '/home/mg542/Source/HOTBOT'
-    os.chdir(folder)
+    #pickleFile = 'Domain/example.pkl'
+    #folder = '/home/mg542/Source/HOTBOT'
+    os.chdir(directory)
     state = State(file=pickleFile)
+    mesh = findMesh(state, 7)
     position = state[0]['position']
     cellTypes = state[0]['type']
     dir = state[0]['direction']
+    density = Density(position, mesh)
+    contours = Contours(density, 50, mesh)
     
     
     
