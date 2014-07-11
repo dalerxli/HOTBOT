@@ -78,8 +78,6 @@ def findMesh(state, gridsize):
     center = (maxX+minX)/2., (maxY+minY)/2.
     extentX = center[0] - nX*gridsize/2., center[0] + nX*gridsize/2.
     extentY = center[1] - nY*gridsize/2., center[1] + nY*gridsize/2.
-    Xrange = np.arange(*extentX + (gridsize,))
-    Yrange = np.arange(*extentY + (gridsize,))
     return extentX + extentY + (gridsize,)
 
 def scale(pos, mesh):
@@ -178,7 +176,7 @@ class NumberField(np.ndarray):
     
     def reMesh(self, mesh, copy=True):
         if copy:
-            return numberField(self.positions, self.cellStates, mesh, self.types, self.cellType)
+            return NumberField(self.positions, self.cellStates, mesh, self.types, self.cellType)
         else:
             self.__new__(self.positions, self.cellStates, mesh, self.types, self.cellType)  
             return self

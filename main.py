@@ -15,11 +15,12 @@ from deap import creator
 from deap import gp
 from deap import tools
 
+
 import scoop.futures as futures
 
 from Primitives import *
 from storePrimitives import *
-from Description import Description, Domain
+from Description import Domain
 from GeneticProgramming import *
 
 #loading domain
@@ -31,10 +32,10 @@ atlasesFile = None
 
 nAtlases = 2
 nSwaps = 3
-nMappings = 300
+nMappings = 10
 ngen = 30000
 
-checkFreq = 10
+freq = 10
 
 treeMin = 2
 treeMax = 5
@@ -54,12 +55,9 @@ print 'Starting'
 pset = loadPset(psetFile)
 print 'Loaded Primitives, loading Domain'
 
-raise
-
 with open(domainFile, 'rb') as f:
     domain = cPickle.load(f)
 print 'Loaded Domain'
-
 
 creator.create("FitnessMulti", base.Fitness, weights=(1.0, -1.0, 1.0, -1.0))
 creator.create("Robustness", float)
@@ -81,18 +79,26 @@ creator.create("Individual", gp.PrimitiveTree,
                size=creator.Size,
                svd=creator.SVDcoef)
 
-def evalCharacteristic(individual):
-    '''
-    This function applies a mapping to the domain of propagations
-    returning the domain of characteristics
-    '''
+def evalMapping(primitiveTree):
+    #evaluate Characteristics
     try:
-        mapping = gp.compile(individual, pset)
-        domainCharac = domain.evalCharacteristics(mapping)
+        mapping = gp.compile(primitiveTree, pset)
+        characteristic = domain.evalCharacteristics(mapping)
     except:
-        mapping = lambda ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6: np.inf
-        domainCharac = domain.evalCharacteristics(mapping)
-    return domainCharac
+        mapping = lambda ARG0, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6: np.NaN
+        characteristic = domain.evalCharacteristics(mapping)
+    charac = characteristic['characteristic']
+    #evaluate domain SD of characteristic
+    normSD = charac.std()
+    #evaluate robustness
+    robustness = charac.std(axis = 1)
+    robustness = np.mean(robustness)
+    #evaluate shift
+    shifts = charac.std(axis = 2)
+    shift = shifts.mean()
+    #evaluate averages
+    domainAv = charac.mean()
+    return characteristic, normSD, robustness, shift, domainAv
 
 def selectSVD(atlas, minDiv=1e-2):
     atlas.sort(lambda x, y: cmp(x.shift, y.shift))
@@ -150,18 +156,8 @@ toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("compile", gp.compile, pset=pset)
 
 # Creating evaluation operators
-toolbox.register("characteristic", evalCharacteristic)#, domain=domain)
-toolbox.register("robustness", evalRobustness)
-toolbox.register("shift", evalShift)
-toolbox.register("domainSD", evalDomainSD)
-toolbox.register("domainAv", evalDomainAv)
-toolbox.register("evalCRS", evalCRSSA, toolbox=toolbox)
-toolbox.register("evalDiversity", evalDiversity)
-toolbox.register("selSVD", selectSVD)
-toolbox.register("divRobust", evalDivFit, toolbox=toolbox, sort='robust')
-toolbox.register("divShift", evalDivFit, toolbox=toolbox, sort='shift')
-toolbox.register("evalPareto", evalPareto, toolbox=toolbox, similar=lambda x, y:equal(x, y, minDiv))
-toolbox.register("pareto", returnPareto, similar=operator.eq)
+toolbox.register("evalMapping", evalMapping)
+toolbox.register("evalCRS", evalInvalid, toolbox=toolbox)
 
 # Creating mutations and mating operators
 toolbox.register("mate", gp.cxOnePoint)
@@ -174,14 +170,13 @@ mutpb = {toolbox.mutateEphemeral : mutpbEphemeral,
          toolbox.mutateUniform : mutpbUniform, 
          toolbox.mutateShrink : mutpbShrink, }
 
-def paretos(checkpoint=None, freq=50):
-    
-    if checkpoint is not None:
-        os.chdir(checkpoint)
-        foldername = datetime.today().replace(microsecond=0).isoformat()
-        os.mkdir(foldername)
-        os.chdir(foldername)
-        folder = os.getcwd()
+if __name__ == '__main__':
+
+    os.chdir(store)
+    foldername = datetime.today().replace(microsecond=0).isoformat()
+    os.mkdir(foldername)
+    os.chdir(foldername)
+    folder = os.getcwd()
     
     if atlasesFile is not None:
         with open(atlasesFile, 'rb') as f:
@@ -214,12 +209,7 @@ def paretos(checkpoint=None, freq=50):
                                              # map(lambda y: "%.1e" % y, x)
                                                  , stat))
     
-    atlases, logbook = eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, 
-                                 minDiv, stats=stats, #halloffame=hof,
-                                 checkpoint=folder, freq=freq)
-    return atlases, logbook#, hof
-            
-        
-if __name__ == '__main__':
+    atlases, logbook = eaParetosSVD(atlases, toolbox, cxpb,
+                                    mutpb, ngen, minDiv, stats=stats, 
+                                    checkpoint=folder, freq=freq)
     
-    atlases, logbook = paretos(checkpoint=store, freq=checkFreq)
