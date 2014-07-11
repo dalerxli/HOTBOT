@@ -30,6 +30,12 @@ store = '/scratch/mg542/store'
 atlasesFile = '/scratch/mg542/store/2014-06-23T12:21:08/10:01:37.pkl'
 atlasesFile = None
 
+domainFile = '/sharedscratch/mg542/CellModeller/domain.pkl'
+psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
+store = '/sharedscratch/mg542/store'
+atlasesFile = ''
+atlasesFile = None
+
 nAtlases = 2
 nSwaps = 3
 nMappings = 10
