@@ -4,6 +4,7 @@ Created on 14 May 2014
 @author: mg542
 '''
 
+import pickle
 import copy
 import operator
 import random
@@ -31,6 +32,10 @@ class Primitives(gp.PrimitiveSetTyped):
                 ):
         pset = gp.PrimitiveSetTyped.__new__(cls, name, in_types, ret_type, prefix="ARG")
         return pset
+    
+    def renameArgs(self, inputNames):
+        kwargs = dict((''.join(("ARG", str(i))), name) for i, name in enumerate(inputNames))
+        self.renameArguments(**kwargs)
     
     def addPrimitives(self, types, operators, 
                       terminals = None, ephemerals = None):
@@ -306,6 +311,7 @@ def adfContour(cellPositions, mesh, types=None, cellType=None):
 
 def createPset(**psetDict):
     inputTypes = psetDict['inputTypes']
+    inputNames = psetDict['inputNames']
     types = psetDict['types']
     operators = psetDict['operators']
     terminals = psetDict['terminals']
@@ -313,15 +319,22 @@ def createPset(**psetDict):
     specific_operators = psetDict['specificOperators']
     
     pset = Primitives("MAIN", inputTypes, float, 'ARG')
+    pset.renameArgs(inputNames)
     pset.addPrimitives(types, operators, terminals, ephemerals)
     pset.addSpecificPrimitives(specific_operators)
     
     return pset
+
+def loadPset(filename):
+    with open(filename, 'rb') as f:
+        psetDict = pickle.load(f)
+    return createPset(**psetDict)
     
 
 if __name__ == '__main__':
     inputTypes = [float, CellTypes, CellStates, CellStates,
                   CellPositions, CellVectors, Mesh]
+    inputNames = ['number', 'types', 'radii', 'lengths', 'positions', 'directions', 'mesh']
     
     referenceTypes = {
                       'number': float, 

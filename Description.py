@@ -53,12 +53,12 @@ class CellTypes(np.ndarray):
         return obj
     
 class CellType(int):
-    def __new__(self, type=None):
-        if type is not None:
-            obj = int(type)
+    def __new__(cls, cellType=None):
+        if cellType is not None:
+            obj = int(cellType)
         else:
             obj = randint(0,1)
-        return obj
+        return super(CellType, cls).__new__(cls, obj)
     
 class Mesh(np.ndarray):
     def __new__(cls, input_array):

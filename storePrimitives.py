@@ -16,30 +16,29 @@ import numpy as np
 
 from Description import *
 from Primitives import *
+# 
+# def createPset(**psetDict):
+#     inputTypes = psetDict['inputTypes']
+#     types = psetDict['types']
+#     operators = psetDict['operators']
+#     terminals = psetDict['terminals']
+#     ephemerals = psetDict['ephemerals']
+#     specific_operators = psetDict['specificOperators']
+#     
+#     pset = Primitives("MAIN", inputTypes, float, 'ARG')
+#     pset.addPrimitives(types, operators, terminals, ephemerals)
+#     pset.addSpecificPrimitives(specific_operators)
+#     
+#     return pset
 
-def createPset(**psetDict):
-    inputTypes = psetDict['inputTypes']
-    types = psetDict['types']
-    operators = psetDict['operators']
-    terminals = psetDict['terminals']
-    ephemerals = psetDict['ephemerals']
-    specific_operators = psetDict['specificOperators']
-    
-    pset = Primitives("MAIN", inputTypes, float, 'ARG')
-    pset.addPrimitives(types, operators, terminals, ephemerals)
-    pset.addSpecificPrimitives(specific_operators)
-    
-    return pset
 
-def loadPset(filename):
-    with open(filename, 'rb') as f:
-        psetDict = pickle.load(f)
-    return createPset(**psetDict)
     
 
 
 inputTypes = [float, CellTypes, CellStates, CellStates,
               CellPositions, CellVectors, Mesh]
+
+inputNames = ['number', 'types', 'radii', 'lengths', 'positions', 'directions', 'mesh']
     
 referenceTypes = {
                   'number': float, 
@@ -130,24 +129,27 @@ specific_operators = [
                       ]
 
 terminals = [[True, bool],
-             [False, bool], ]
+             [False, bool],
+             [CellType(0), CellType, 'CellType0'],
+             [CellType(1), CellType, 'CellType1'], ]
 
 
 ephemerals = [
               ["rand10", float10, float], 
               ["int10", int10, int], 
-              ["cellType", CellType, CellType],
+              #["cellType", CellType, CellType],
               ]
 
  
 if __name__ == '__main__':   
     pset = Primitives("MAIN", inputTypes, float, 'ARG')
+    pset.renameArgs(inputNames)
     pset.addPrimitives(types, operators, terminals, ephemerals)
-    
     pset.addSpecificPrimitives(specific_operators)
     
     psetDict = {
                 'inputTypes': inputTypes,
+                'inputNames': inputNames,
                 'types': types,
                 'operators': operators,
                 'terminals': terminals,
@@ -155,5 +157,5 @@ if __name__ == '__main__':
                 'specificOperators': specific_operators,
                 }   
     
-    with open('/home/mg542/Source/HOTBOT/pset.pkl' , 'wb') as f:
+    with open('/home/mg542/Documents/Source/HOTBOT/pset.pkl' , 'wb') as f:
         pickle.dump(psetDict, f)
