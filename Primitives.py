@@ -36,9 +36,9 @@ class Primitives(gp.PrimitiveSetTyped):
                       terminals = None, ephemerals = None):
         
         primitiveList = self.generatePrimitives(types, operators)
-        
+            
         for item in primitiveList:
-            self.addPrimitive(*item)
+            self.addPrimitive(*item, name=namePrimitive(item))
             self.primitivesList.append(item)
         
         self.addTerminalsEphemerals(terminals, ephemerals)
@@ -104,7 +104,7 @@ class Primitives(gp.PrimitiveSetTyped):
         It doesn't generate a set of all possible input types
         """
         for op in operators:
-            self.addPrimitive(*op)
+            self.addPrimitive(*op, name=namePrimitive(op))
             self.primitivesList.append(op)
     
     def addTerminals(self, terminals):
@@ -114,6 +114,12 @@ class Primitives(gp.PrimitiveSetTyped):
     def addEphemeral(self, ephemerals):
         for item in ephemerals: 
             self.addEphemeralConstant(*item)
+            
+def namePrimitive(args):
+    funcName = args[0].__name__
+    argNames = '-'.join(map(lambda arg: arg.__name__, args[1]))
+    name = '_'.join((funcName, argNames))
+    return name
                 
 def generatePrimitives(types, operators):  
     #This function generates the set of possible 
