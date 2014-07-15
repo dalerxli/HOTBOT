@@ -1,4 +1,7 @@
+print 'very state'
 
+import scoop.futures as futures
+import scoop
 import operator
 import random
 import pickle
@@ -16,32 +19,34 @@ from deap import gp
 from deap import tools
 
 
-import scoop.futures as futures
+#import scoop.futures as futures
 
 from Primitives import *
 from storePrimitives import *
 from Description import Domain
 from GeneticProgramming import *
 
-#loading domain
-domainFile = '/scratch/mg542/CellModeller/domain.pkl'
-psetFile = '/home/mg542/Documents/Source/HOTBOT/pset.pkl'
-store = '/scratch/mg542/store'
-atlasesFile = '/scratch/mg542/store/2014-06-23T12:21:08/10:01:37.pkl'
-atlasesFile = None
+print 'start'
 
-domainFile = '/sharedscratch/mg542/CellModeller/domain.pkl'
+#loading domain
+#domainFile = '/home/mg542/CellModeller/domain.pkl'
+#psetFile = '/home/mg542/Documents/Source/HOTBOT/pset.pkl'
+#store = '/scratch/mg542/store'
+#atlasesFile = '/scratch/mg542/store/2014-06-23T12:21:08/10:01:37.pkl'
+#atlasesFile = None
+
+domainFile = '/scratch/mg542/Data/CellModeller/domain.pkl'
 psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
 store = '/sharedscratch/mg542/store'
-atlasesFile = ''
-atlasesFile = None
+atlasesFile = '/sharedscratch/mg542/store/2014-07-13T19:30:42/22:54:16.pkl'
+#atlasesFile = None
 
 nAtlases = 2
 nSwaps = 3
-nMappings = 10
+nMappings = 100
 ngen = 30000
 
-freq = 10
+freq = 1
 
 treeMin = 2
 treeMax = 5
@@ -60,6 +65,13 @@ minDiv = (0.6, 500) #1e-2
 print 'Starting'
 pset = loadPset(psetFile)
 print 'Loaded Primitives, loading Domain'
+print 'Domain file exists', os.path.isfile(domainFile), os.listdir('/scratch/mg542/Data/CellModeller')
+import scoop.futures as futures
+#try:
+#    from copyDomain import copyDomain
+#    copyDomain()
+#except:
+ #   domainFile = '/home/mg542/Data/CellModeller/domain.pkl'
 
 with open(domainFile, 'rb') as f:
     domain = cPickle.load(f)
@@ -176,8 +188,10 @@ mutpb = {toolbox.mutateEphemeral : mutpbEphemeral,
          toolbox.mutateUniform : mutpbUniform, 
          toolbox.mutateShrink : mutpbShrink, }
 
-if __name__ == '__main__':
+print 'end of setup', domain.folders
 
+if __name__ == '__main__':
+    print 'starting genetic programming'
     os.chdir(store)
     foldername = datetime.today().replace(microsecond=0).isoformat()
     os.mkdir(foldername)
@@ -193,7 +207,7 @@ if __name__ == '__main__':
             for i, atlas in enumerate(cp['atlases'][nAtlases:]):
                 atlases[i % nAtlases][:] = atlases[i % nAtlases] + atlas
         for atlas in atlases:
-            atlas[:] = atlas + list(cp['constantMappings'])     
+            atlas[:] = atlas     
     else:
         atlases = []
         for i in range(nAtlases):
@@ -205,17 +219,17 @@ if __name__ == '__main__':
                 ind.robustness = None
                 ind.shift = None
     
-    stats = tools.Statistics(lambda ind: (ind.shift, ind.robustness, ind.svd, ind.size,))#ind.fitness.values)
+    stats = tools.Statistics(lambda ind: (ind.shift, ind.robustness, ind.domainSD, ind.svd, ind.size))
     stats.register("Atlas", lambda stat: map(lambda x: 
-                                             ("%.0f"%np.log10(x[0]), "%.0f"%np.log10(x[1]),
+                                             ("%.1f"%(x[0]/x[2]), "%.1f"%(x[1]/x[2]),
                                               #"%.2e" % x[0], "%.2e" % x[1],
-                                              "%.1f"%x[2], x[3])
+                                              "%.2f"%x[2], x[3])
                                              # "%.1e" % x[2], "%.1e" % x[3],
                                              # "%.i" % x[4]) 
                                              # map(lambda y: "%.1e" % y, x)
                                                  , stat))
-    
+    print len(atlases), 'atlases,', map(len,atlases), 'long'
     atlases, logbook = eaParetosSVD(atlases, toolbox, cxpb,
                                     mutpb, ngen, minDiv, stats=stats, 
                                     checkpoint=folder, freq=freq)
-    
+    print 'end'    
