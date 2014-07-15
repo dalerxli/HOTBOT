@@ -155,5 +155,5 @@ if __name__ == '__main__':
                 'specificOperators': specific_operators,
                 }   
     
-    with open('/home/mg542/Documents/Source/HOTBOT/pset.pkl' , 'wb') as f:
+    with open('/home/mg542/Source/HOTBOT/pset.pkl' , 'wb') as f:
         pickle.dump(psetDict, f)

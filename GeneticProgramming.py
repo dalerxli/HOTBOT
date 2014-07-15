@@ -70,23 +70,30 @@ def selectSVD(atlas, minDiv=1e-2):
             return []
         
         def calcFitness(uVal, ind):
-            shift, robust = ind.shift, ind.robustness
+            shift, robust, SD = ind.shift, ind.robustness, ind.domainSD
             norm = np.abs(uVal)
             if norm < minDiv:
                 ind.fitness.values = 0., np.inf, 0., len(ind)
             elif not np.isfinite(shift):
                 ind.fitness.values = 0., np.inf, 0., len(ind)
-            else:
-                ind.fitness.values = shift*norm, robust/norm, norm, len(ind)
+            elif robust != 0.:
+                ind.fitness.values = shift*norm/robust, robust/norm/SD, norm, len(ind)
+	    else:
+		ind.fitness.values = shift*norm/SD, robust/norm/SD, norm, len(ind)
             ind.svd = norm
             ind.size = len(ind)
         map(calcFitness, vValues, atlas)            
 
-        nRet = 5
+        nRet = 3
         if len(atlas) < nRet:
             nRet = len(atlas)
-        return tools.selSPEA2(atlas, 5)
-    
+        best = tools.selSPEA2(atlas, nRet)
+	retlist = [ind for ind in best if ind.fitness.values[0] < 1]
+	if not retlist:
+	   return best
+	else:
+	   return retlist
+
     selected = sum(map(selParetoRank, s, V), [])
     
     #Discard Duplicates
@@ -154,8 +161,8 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             minDiv = 1 - 10**( - paretoN**a / b)
             minDivList = [1 - 10**( - paretoN**a / b) for atlas in atlases]
         
-        
-        selectedAtlases = list(toolbox.multiMap(lambda atlas, minD: selectSVD(atlas, minD), atlases, minDivList))
+        print paretoN, minDivList 
+        selectedAtlases = list(toolbox.map(lambda atlas, minD: selectSVD(atlas, minD), atlases, minDivList))
         
         # Match size of migrants to pareto fronts
         paretoN = sum(map(len, selectedAtlases))
@@ -194,16 +201,16 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             if halloffame is not None:
                 halloffame.update(selected)
             
-            return selected + offspring
+            return removeDuplicates(selected + offspring)
         
         atlases =  toolbox.map(nextGen, selectedAtlases)
-        
 
         record = stats.compile(sum(selectedAtlases, [])) if stats else {}
         logbook.record(gen=gen, nevals=nevals, natlas=map(len, selectedAtlases), **record)
 
         if verbose:
             print logbook.stream
+	    print 'new Atlases', map(len, atlases)
             
         if checkpoint is not None and gen % freq == 0:
             os.chdir(checkpoint)
@@ -218,6 +225,7 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             lastcheckpoint = gen
         elif lastcheckpoint is not None:
             print "Last checkpointed at generation %.i" % lastcheckpoint + ' in ' + checkpoint + '/' + filename
+	print ''
         pbar.update(gen)
         print ''        
     pbar.finish()
@@ -466,3 +474,19 @@ def varAnd(population, toolbox, cxpb, mutpb):
                 offspring[i].charac = None
     
     return offspring
+
+def removeDuplicates(population):
+    unique = population[:]
+    for ind1 in population:
+        has_twin = False
+        to_remove = []
+        for ind2 in unique:    # hofer = hall of famer
+            if ind1 == ind2:
+                has_twin = True
+                to_remove.append(ind2)
+        
+        for ind in reversed(to_remove):       # Remove the dominated hofer
+            unique.remove(ind)
+        if has_twin:
+            unique.append(ind1)
+    return unique
