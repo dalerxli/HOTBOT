@@ -34,11 +34,11 @@ print 'start'
 #atlasesFile = '/scratch/mg542/store/2014-06-23T12:21:08/10:01:37.pkl'
 #atlasesFile = None
 
-domainFile = '/scratch/mg542/Data/CellModeller/domain.pkl'
+domainFile = '/sharedscratch/mg542/Data/CellModeller/domain.pkl'
 seedFile = '/home/mg542/Source/HOTBOT/seed.pkl'
 psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
 store = '/sharedscratch/mg542/store'
-store = '/scratch/mg542/store'
+#store = '/scratch/mg542/store'
 #atlasesFile = '/sharedscratch/mg542/store/2014-07-13T19:30:42/22:54:16.pkl'
 atlasesFile = None
 
