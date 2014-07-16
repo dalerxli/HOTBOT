@@ -122,7 +122,7 @@ class Primitives(gp.PrimitiveSetTyped):
             
 def namePrimitive(args):
     funcName = args[0].__name__
-    argNames = '-'.join(map(lambda arg: arg.__name__, args[1]))
+    argNames = ''.join(map(lambda arg: arg.__name__, args[1]))
     name = '_'.join((funcName, argNames))
     return name
                 
@@ -252,6 +252,12 @@ def largestContour(contours):
 def sumPerimeters(contours):
     return contours.sumPerimeters()
 
+def sumAreas(contours):
+    return contours.sumAreas()
+
+def avgSolidity(contours):
+    return contours.avgSolidity()
+
 def perimeter(contour):
     return contour.perimeter()
 
@@ -260,6 +266,13 @@ def area(contour):
 
 def convexHull(contour):
     return contour.convexHull()
+
+def reMesh(dens1, dens2):
+    if type(dens1) == Density and type(dens2) == Density:
+        if not np.array_equal(dens1.mesh, dens2.mesh):
+            dens2 = dens2.reMesh(dens1.mesh, copy=True)
+        dens2 = dens2.view(np.ndarray)   
+    return dens2
 
 def densityMultiply(dens1, dens2):
     dens2 = reMesh(dens1, dens2)
@@ -282,9 +295,7 @@ def centroidY(contour):
     return pos[1]
 
 def solidity(contour):
-    area = contour.area()
-    hullArea = contour.convexHull().area()
-    return float(area) / hullArea
+    return contour.solidity()
     
 def orientation(contour):
     (x,y),(MA,ma),angle = contour.fitEllipse()

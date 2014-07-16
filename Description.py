@@ -13,7 +13,6 @@ from random import randint
 
 from CellModeller.CellState import CellState
 
-
 directory = '/scratch/mg542/CellModeller'
 pickleFile = '/scratch/mg542/CellModeller/1/20140704-204113/step-00600.pickle'
 
@@ -98,43 +97,6 @@ def reMesh(dens1, dens2):
             dens2 = dens2.reMesh(dens1.mesh, copy=True)
         dens2 = dens2.view(np.ndarray)   
     return dens2
-
-def densityMultiply(dens1, dens2):
-    #dens2 = reMesh(dens1, dens2)
-    return dens1 * dens2
-
-def densityAdd(dens1, dens2):
-    #dens2 = reMesh(dens1, dens2)
-    return dens1 + dens2
-
-def densityDivide(dens1, dens2):
-    #dens2 = reMesh(dens1, dens2)
-    return dens1 / dens2
-
-def centroidX(contour):
-    pos = contour.centroid()
-    return pos[0]
-
-def centroidY(contour):
-    pos = contour.centroid()
-    return pos[1]
-
-def solidity(contour):
-    area = contour.area()
-    hullArea = contour.convexHull().area()
-    return float(area) / hullArea
-    
-def orientation(contour):
-    (x,y),(MA,ma),angle = contour.fitEllipse()
-    return angle
-
-def majorAxis(contour):
-    (x,y),(MA,ma),angle = contour.fitEllipse()
-    return Ma
-
-def minorAxis(contour):
-    (x,y),(MA,ma),angle = contour.fitEllipse()
-    return ma
 
     
 class NumberField(np.ndarray):
@@ -245,6 +207,15 @@ class Contours(list):
     def sumPerimeters(self):
         return sum(self.perimeters())
     
+    def sumAreas(self):
+        return sum(self.areas())
+    
+    def solidities(self):
+        return map(lambda contour:contour.solidity(), self)
+    
+    def avgSolidity(self):
+        return np.mean(self.solidities())
+    
     def largestContour(self):
         if len(self) == 0:
             return Contour([], self.mesh)
@@ -287,6 +258,14 @@ class Contour(np.ndarray):
         y = np.divide(M['m01'], M['m00'])
         pos = scale((x,y), self.mesh)
         return pos
+    
+    def solidity(self):
+        area = self.area()
+        hullArea = self.convexHull().area()
+        try:
+            return float(area) / hullArea
+        except ZeroDivisionError:
+            return 1.
     
     def convexHull(self):
         if len(self) == 0:
