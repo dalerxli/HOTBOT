@@ -292,8 +292,8 @@ class Contour(np.ndarray):
             return (x,y), radius
     
     def fitEllipse(self):
-        if len(self) == 0:
-            return (0,0), (0,0), 0
+        if len(self) < 5:
+            return (0.,0.), (0.,0.), 0.
         else:
             #Returns rotated rectangle which encloses ellipse
             pos, (w, h), angle = cv2.fitEllipse(self)
