@@ -1,7 +1,6 @@
-print 'very state'
-
 import scoop.futures as futures
 import scoop
+
 import operator
 import random
 import pickle
@@ -36,10 +35,12 @@ print 'start'
 #atlasesFile = None
 
 domainFile = '/scratch/mg542/Data/CellModeller/domain.pkl'
+seedFile = '/home/mg542/Source/HOTBOT/seed.pkl'
 psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
 store = '/sharedscratch/mg542/store'
-atlasesFile = '/sharedscratch/mg542/store/2014-07-13T19:30:42/22:54:16.pkl'
-#atlasesFile = None
+store = '/scratch/mg542/store'
+#atlasesFile = '/sharedscratch/mg542/store/2014-07-13T19:30:42/22:54:16.pkl'
+atlasesFile = None
 
 nAtlases = 2
 nSwaps = 3
@@ -65,8 +66,7 @@ minDiv = (0.6, 500) #1e-2
 print 'Starting'
 pset = loadPset(psetFile)
 print 'Loaded Primitives, loading Domain'
-print 'Domain file exists', os.path.isfile(domainFile), os.listdir('/scratch/mg542/Data/CellModeller')
-import scoop.futures as futures
+
 #try:
 #    from copyDomain import copyDomain
 #    copyDomain()
@@ -188,8 +188,6 @@ mutpb = {toolbox.mutateEphemeral : mutpbEphemeral,
          toolbox.mutateUniform : mutpbUniform, 
          toolbox.mutateShrink : mutpbShrink, }
 
-print 'end of setup', domain.folders
-
 if __name__ == '__main__':
     print 'starting genetic programming'
     os.chdir(store)
@@ -197,6 +195,8 @@ if __name__ == '__main__':
     os.mkdir(foldername)
     os.chdir(foldername)
     folder = os.getcwd()
+    
+
     
     if atlasesFile is not None:
         with open(atlasesFile, 'rb') as f:
@@ -219,16 +219,25 @@ if __name__ == '__main__':
                 ind.robustness = None
                 ind.shift = None
     
+    if seedFile is not None:
+        with open(seedFile, 'rb') as f:
+            seedMaps = cPickle.load(f)
+        seedInd = [creator.Individual(map) for map in seedMaps]
+        for i, ind in enumerate(seedInd):
+            atlases[i % nAtlases].append(ind)
+            
+    
     stats = tools.Statistics(lambda ind: (ind.shift, ind.robustness, ind.domainSD, ind.svd, ind.size))
     stats.register("Atlas", lambda stat: map(lambda x: 
                                              ("%.1f"%(x[0]/x[2]), "%.1f"%(x[1]/x[2]),
                                               #"%.2e" % x[0], "%.2e" % x[1],
-                                              "%.2f"%x[2], x[3])
+                                              "%.2f"%x[3], x[4])
                                              # "%.1e" % x[2], "%.1e" % x[3],
                                              # "%.i" % x[4]) 
                                              # map(lambda y: "%.1e" % y, x)
                                                  , stat))
-    print len(atlases), 'atlases,', map(len,atlases), 'long'
+    
+    print len(atlases), 'atlases,', [ len(atlas) for atlas in atlases], 'long'
     atlases, logbook = eaParetosSVD(atlases, toolbox, cxpb,
                                     mutpb, ngen, minDiv, stats=stats, 
                                     checkpoint=folder, freq=freq)
