@@ -58,6 +58,8 @@ cxpb = 0.5
 mutpbUniform = 0.1
 mutpbShrink = 0.05
 mutpbEphemeral = 0.4
+mutpbNode = 0.2
+mutpbInsert = 0.1
 
 #Adaptive diversity scaling
 minDiv = (0.6, 500) #1e-2
@@ -182,11 +184,15 @@ toolbox.register("mate", gp.cxOnePoint)
 toolbox.register("mutateEphemeral", gp.mutEphemeral, mode='one')
 toolbox.register("mutateUniform", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 toolbox.register("mutateShrink", gp.mutShrink)
+toolbox.register("mutateNode", gp.mutNodeReplacement, pset=pset)
+toolbox.register("mutateInsert", gp.mutInsert, pset=pset)
 toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 
 mutpb = {toolbox.mutateEphemeral : mutpbEphemeral, 
          toolbox.mutateUniform : mutpbUniform, 
-         toolbox.mutateShrink : mutpbShrink, }
+         toolbox.mutateShrink : mutpbShrink, 
+         toolbox.mutateNode : mutpbNode,
+         toolbox.mutateInsert : mutpbInsert, }
 
 if __name__ == '__main__':
     print 'starting genetic programming'
