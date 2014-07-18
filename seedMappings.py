@@ -9,9 +9,9 @@ from deap import gp
 from storePrimitives import *
 from Primitives import *
 
-psetFile = '/home/mg542/Documents/Source/HOTBOT/pset.pkl'
-domainFile = '/scratch/mg542/CellModeller/domain.pkl'
-seedFile = '/home/mg542/Documents/Source/HOTBOT/seed.pkl'
+psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
+domainFile = '/sharedscratch/mg542/Data/CellModeller/domain.pkl'
+seedFile = '/home/mg542/Source/HOTBOT/seed.pkl'
 
 ['safeDiv_float-NumberField',
  'multiply_CellStates-CellStates',

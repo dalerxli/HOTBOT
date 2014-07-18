@@ -141,6 +141,7 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
         
         #Evaluate fitness and pareto fronts for the generation
         #nevals += sum(toolbox.map(toolbox.evalCRS, atlases))
+	#print 'eval CRS'
         nevals += toolbox.evalCRS(sum(atlases, []))
         
         #filter invalid mappings out so that SVD can be done:
@@ -161,7 +162,7 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             minDiv = 1 - 10**( - paretoN**a / b)
             minDivList = [1 - 10**( - paretoN**a / b) for atlas in atlases]
         
-        print paretoN, minDivList 
+        #print paretoN, minDivList 
         selectedAtlases = list(toolbox.map(lambda atlas, minD: selectSVD(atlas, minD), atlases, minDivList))
         
         # Match size of migrants to pareto fronts
@@ -214,7 +215,7 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             
         if checkpoint is not None and gen % freq == 0:
             os.chdir(checkpoint)
-            filename = datetime.now().time().replace(microsecond=0).isoformat() + '.pkl'
+            filename = str(gen) + '-' + datetime.now().time().replace(microsecond=0).isoformat() + '.pkl'
             cp = dict(atlases = selectedAtlases,  generation=gen, 
                       halloffame=halloffame, logbook=logbook, 
                       migrants=migrants,
@@ -227,7 +228,8 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             print "Last checkpointed at generation %.i" % lastcheckpoint + ' in ' + checkpoint + '/' + filename
 	print ''
         pbar.update(gen)
-        print ''        
+        print ''     
+ 	print ''   
     pbar.finish()
             
     return paretos, logbook

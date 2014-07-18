@@ -34,7 +34,7 @@ print 'start'
 #atlasesFile = '/scratch/mg542/store/2014-06-23T12:21:08/10:01:37.pkl'
 #atlasesFile = None
 
-domainFile = '/sharedscratch/mg542/Data/CellModeller/domain.pkl'
+domainFile = '/scratch/mg542/Data/CellModeller/domain.pkl'
 seedFile = '/home/mg542/Source/HOTBOT/seed.pkl'
 psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
 store = '/sharedscratch/mg542/store'
@@ -222,23 +222,22 @@ if __name__ == '__main__':
     if seedFile is not None:
         with open(seedFile, 'rb') as f:
             seedMaps = cPickle.load(f)
-        seedInd = [creator.Individual(map) for map in seedMaps]
-        for i, ind in enumerate(seedInd):
-            atlases[i % nAtlases].append(ind)
+        seedInd = [creator.Individual(map[:]) for map in seedMaps]
+        for ind in seedInd:
+            ind.charac = None
+            ind.robustness = None
+            ind.shift = None
+        atlases = [atlas + seedInd for atlas in atlases]
             
-    
+    def formatValues(stat):
+        return [("%.1f" % (x[0] / x[2]), "%.1f" % (x[1] / x[2]),
+                 "%.2f" % x[3], x[4]) for x in stat]
+ 
     stats = tools.Statistics(lambda ind: (ind.shift, ind.robustness, ind.domainSD, ind.svd, ind.size))
-    stats.register("Atlas", lambda stat: map(lambda x: 
-                                             ("%.1f"%(x[0]/x[2]), "%.1f"%(x[1]/x[2]),
-                                              #"%.2e" % x[0], "%.2e" % x[1],
-                                              "%.2f"%x[3], x[4])
-                                             # "%.1e" % x[2], "%.1e" % x[3],
-                                             # "%.i" % x[4]) 
-                                             # map(lambda y: "%.1e" % y, x)
-                                                 , stat))
-    
+    stats.register("Atlas", formatValues)  
+
+
     print len(atlases), 'atlases,', [ len(atlas) for atlas in atlases], 'long'
     atlases, logbook = eaParetosSVD(atlases, toolbox, cxpb,
                                     mutpb, ngen, minDiv, stats=stats, 
-                                    checkpoint=folder, freq=freq)
-    print 'end'    
+                                    checkpoint=folder, freq=freq)    
