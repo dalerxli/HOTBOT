@@ -25,7 +25,7 @@ from storePrimitives import *
 from Description import Domain
 from GeneticProgramming import *
 
-print 'start'
+#print 'start'
 
 #loading domain
 #domainFile = '/home/mg542/CellModeller/domain.pkl'
@@ -34,17 +34,17 @@ print 'start'
 #atlasesFile = '/scratch/mg542/store/2014-06-23T12:21:08/10:01:37.pkl'
 #atlasesFile = None
 
-domainFile = '/scratch/mg542/Data/CellModeller/domain.pkl'
+domainFile = '/sharedscratch/mg542/Data/CellModeller/domain.pkl'
 seedFile = '/home/mg542/Source/HOTBOT/seed.pkl'
 psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
 store = '/sharedscratch/mg542/store'
 #store = '/scratch/mg542/store'
-#atlasesFile = '/sharedscratch/mg542/store/2014-07-13T19:30:42/22:54:16.pkl'
-atlasesFile = None
+atlasesFile = '/sharedscratch/mg542/store/2014-07-17T12:38:24/15:01:09.pkl'
+#atlasesFile = None
 
 nAtlases = 2
 nSwaps = 3
-nMappings = 100
+nMappings = 10
 ngen = 30000
 
 freq = 1
@@ -65,19 +65,10 @@ mutpbInsert = 0.1
 minDiv = (0.6, 500) #1e-2
 
 #Loading Primitives
-print 'Starting'
 pset = loadPset(psetFile)
-print 'Loaded Primitives, loading Domain'
-
-#try:
-#    from copyDomain import copyDomain
-#    copyDomain()
-#except:
- #   domainFile = '/home/mg542/Data/CellModeller/domain.pkl'
 
 with open(domainFile, 'rb') as f:
     domain = cPickle.load(f)
-print 'Loaded Domain'
 
 creator.create("FitnessMulti", base.Fitness, weights=(1.0, -1.0, 1.0, -1.0))
 creator.create("Robustness", float)
@@ -192,7 +183,8 @@ mutpb = {toolbox.mutateEphemeral : mutpbEphemeral,
          toolbox.mutateUniform : mutpbUniform, 
          toolbox.mutateShrink : mutpbShrink, 
          toolbox.mutateNode : mutpbNode,
-         toolbox.mutateInsert : mutpbInsert, }
+        # toolbox.mutateInsert : mutpbInsert,
+	 }
 
 if __name__ == '__main__':
     print 'starting genetic programming'
@@ -224,6 +216,7 @@ if __name__ == '__main__':
                 ind.charac = None
                 ind.robustness = None
                 ind.shift = None
+		del ind.fitness.values
     
     if seedFile is not None:
         with open(seedFile, 'rb') as f:
@@ -233,15 +226,15 @@ if __name__ == '__main__':
             ind.charac = None
             ind.robustness = None
             ind.shift = None
+	    del ind.fitness.values
         atlases = [atlas + seedInd for atlas in atlases]
             
     def formatValues(stat):
-        return [("%.1f" % (x[0] / x[2]), "%.1f" % (x[1] / x[2]),
+        return [("%.1f" % safeDiv(x[0], x[1]), "%.1f" % (x[1] / x[2]),
                  "%.2f" % x[3], x[4]) for x in stat]
  
     stats = tools.Statistics(lambda ind: (ind.shift, ind.robustness, ind.domainSD, ind.svd, ind.size))
     stats.register("Atlas", formatValues)  
-
 
     print len(atlases), 'atlases,', [ len(atlas) for atlas in atlases], 'long'
     atlases, logbook = eaParetosSVD(atlases, toolbox, cxpb,

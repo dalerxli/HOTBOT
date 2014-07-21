@@ -28,7 +28,6 @@ def evalInvalid(atlas, toolbox):
     #Reduce individuals to primitiveTrees to reduce parallelisation overhead
     invalid_primTree = [gp.PrimitiveTree(ind) for ind in invalid_ind]
     calculations = list(toolbox.multiMap(toolbox.evalMapping, invalid_primTree))
-    
     for ind, calc in zip(invalid_ind, calculations):
         ind.charac, ind.domainSD, ind.robustness, ind.shift, ind.domainAv  = calc
     
@@ -93,7 +92,6 @@ def selectSVD(atlas, minDiv=1e-2):
 	   return best
 	else:
 	   return retlist
-
     selected = sum(map(selParetoRank, s, V), [])
     
     #Discard Duplicates
@@ -141,9 +139,7 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
         
         #Evaluate fitness and pareto fronts for the generation
         #nevals += sum(toolbox.map(toolbox.evalCRS, atlases))
-	#print 'eval CRS'
         nevals += toolbox.evalCRS(sum(atlases, []))
-        
         #filter invalid mappings out so that SVD can be done:
         def filterInd(individual):
             validCharac = np.isfinite(individual.charac['characteristic'].sum())
@@ -161,10 +157,8 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
         if adaptiveMinDiv:
             minDiv = 1 - 10**( - paretoN**a / b)
             minDivList = [1 - 10**( - paretoN**a / b) for atlas in atlases]
-        
-        #print paretoN, minDivList 
+       
         selectedAtlases = list(toolbox.map(lambda atlas, minD: selectSVD(atlas, minD), atlases, minDivList))
-        
         # Match size of migrants to pareto fronts
         paretoN = sum(map(len, selectedAtlases))
         while paretoN > len(migrants) or len(atlases) * minSize > len(migrants):
@@ -173,14 +167,11 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             ind.robustness = None
             ind.shift = None
             migrants.append(ind)
-        
         #Place selected individuals in migrant population
         selected = sum(selectedAtlases, [])
         swap(selected, migrants)
-        
         # Vary the pool of individuals    
         migrants = varAnd(migrants, toolbox, cxpb, mutpb)
-        
         #Invalidate mutated individuals
         def newInd(ind):
             ind.charac = None
@@ -188,9 +179,8 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             ind.shift = None
             del ind.fitness.values
             return ind
-        
         invalid_ind = [newInd(ind) for ind in migrants if not ind.fitness.valid]
-        
+
         #create new atlases and mutate migrants:
         def nextGen(selected):
             if len(selected) > minSize:
@@ -203,7 +193,6 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
                 halloffame.update(selected)
             
             return removeDuplicates(selected + offspring)
-        
         atlases =  toolbox.map(nextGen, selectedAtlases)
 
         record = stats.compile(sum(selectedAtlases, [])) if stats else {}
@@ -460,21 +449,32 @@ def varAnd(population, toolbox, cxpb, mutpb):
     :math:`[0, 1]`.
     """
     offspring = [toolbox.clone(ind) for ind in population]
-    
+ #   print 'crossover'
     # Apply crossover and mutation on the offspring
     for i in range(1, len(offspring), 2):
         if random.random() < cxpb:
             offspring[i-1], offspring[i] = toolbox.mate(offspring[i-1], offspring[i])
             del offspring[i-1].fitness.values, offspring[i].fitness.values
             offspring[i-1].charac = None
-    
+
+#    print 'mutate', len(offspring)
     for mutator, probability in mutpb.iteritems():
-        for i in range(len(offspring)):
-            if random.random() < probability:
-                offspring[i], = mutator(offspring[i])
-                del offspring[i].fitness.values
-                offspring[i].charac = None
-    
+#	print mutator.__name__, len(offspring)
+	def mutateInd(ind, mut, pb):
+	    if random.random() < pb:
+	        ind, = mut(ind)
+		del ind.fitness.values
+	        ind.charac = None
+	    return ind
+	offspring = [ mutateInd(ind, mutator, probability) for ind in offspring[:] ]
+#        for i in range(len(offspring)):
+#	    print i
+#	    print str(offspring[i])[:20]
+#            if random.random() < probability:
+#                offspring[i], = mutator(offspring[i])
+#                del offspring[i].fitness.values
+#                offspring[i].charac = None
+#    print 'end mutate' 
     return offspring
 
 def removeDuplicates(population):

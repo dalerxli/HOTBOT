@@ -178,7 +178,7 @@ def generatePrimitives(types, operators):
         
 def safeDiv(left, right):
     try: return left / right
-    except ZeroDivisionError: return 0.
+    except ZeroDivisionError: return 1.
     
 def safePower(x1, x2):
     return np.nan_to_num(np.power(x1, x2))
@@ -198,7 +198,7 @@ def safePow(x, y):
     except exceptions.OverflowError:
         return float("inf")
     except exceptions.ZeroDivisionError:
-        return x * 0. * y
+        return x * 0. * y + 1.
     
 def vectorX(vec):
     return vec[0]
