@@ -77,7 +77,7 @@ def removeDuplicates(population):
         has_twin = False
         to_remove = []
         for ind2 in unique:    # hofer = hall of famer
-            if any((ind1 == ind2, similar(ind1, ind2))):
+            if ind1 == ind2:
                 has_twin = True
                 to_remove.append(ind2)
         
