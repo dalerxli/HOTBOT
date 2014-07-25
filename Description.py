@@ -85,7 +85,7 @@ def scale(pos, mesh):
     y = pos[1] * scale + ymin
     return x, y
 
-def histBins(positions, mesh):
+def histBins(mesh):
     minX, maxX, minY, maxY, gridsize = mesh
     Xrange = np.arange(minX, maxX, gridsize)
     Yrange = np.arange(minY, maxY, gridsize)
@@ -102,7 +102,7 @@ def reMesh(dens1, dens2):
 class NumberField(np.ndarray):
     
     def __new__(cls, positions, cellStates, mesh, types = None, cellType=None):
-        xedge, yedge = histBins(positions, mesh)
+        xedge, yedge = histBins(mesh)
         
         xlen = len(xedge) - 1
         ylen = len(yedge) - 1
@@ -146,7 +146,7 @@ class NumberField(np.ndarray):
 class Density(np.ndarray):
     
     def __new__(cls, positions, mesh, types = None, cellType = None):
-        edges = histBins(positions, mesh)
+        edges = histBins(mesh)
         
         if cellType is not None and types is not None:
             positions = positions[types==cellType]

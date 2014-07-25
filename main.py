@@ -34,13 +34,13 @@ from GeneticProgramming import *
 #atlasesFile = '/scratch/mg542/store/2014-06-23T12:21:08/10:01:37.pkl'
 #atlasesFile = None
 
-domainFile = '/sharedscratch/mg542/Data/CellModeller/domain.pkl'
+domainFile = '/scratch/mg542/Data/CellModeller/domain.pkl'
 seedFile = '/home/mg542/Source/HOTBOT/seed.pkl'
 psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
 store = '/sharedscratch/mg542/store'
-#store = '/scratch/mg542/store'
-atlasesFile = '/sharedscratch/mg542/store/2014-07-21T13:09:12/57-10:28:42.pkl'
-#atlasesFile = None
+store = '/scratch/mg542/store'
+#atlasesFile = '/sharedscratch/mg542/store/2014-07-21T13:09:12/57-10:28:42.pkl'
+atlasesFile = None
 
 nAtlases = 2
 nSwaps = 3

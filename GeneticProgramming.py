@@ -21,6 +21,11 @@ from deap import base
 from deap import creator
 from deap import gp
 from deap import tools
+
+def assignValues(invalid_ind, calculations):
+    for ind, calc in zip(invalid_ind, list(calculations)):
+        ind.charac, ind.domainSD, ind.robustness, ind.shift, ind.domainAv  = calc
+    return len(invalid_ind)
     
 def evalInvalid(atlas, toolbox):
     invalid_ind = [ind for ind in atlas if ind.charac is None]
@@ -28,10 +33,7 @@ def evalInvalid(atlas, toolbox):
     #Reduce individuals to primitiveTrees to reduce parallelisation overhead
     invalid_primTree = [gp.PrimitiveTree(ind) for ind in invalid_ind]
     calculations = list(toolbox.multiMap(toolbox.evalMapping, invalid_primTree))
-    for ind, calc in zip(invalid_ind, calculations):
-        ind.charac, ind.domainSD, ind.robustness, ind.shift, ind.domainAv  = calc
-    
-    return len(invalid_ind)
+    return assignValues(invalid_ind, calculations)
 
 def evalSVD(atlas):#, sort = 'robust'):
     '''
@@ -77,21 +79,21 @@ def selectSVD(atlas, minDiv=1e-2):
                 ind.fitness.values = 0., np.inf, 0., len(ind)
             elif robust != 0.:
                 ind.fitness.values = shift*norm/robust, robust/norm/SD, norm, len(ind)
-	    else:
-		ind.fitness.values = shift*norm/SD, robust/norm/SD, norm, len(ind)
-            ind.svd = norm
-            ind.size = len(ind)
+            else:
+                ind.fitness.values = shift*norm/SD, robust/norm/SD, norm, len(ind)
+                ind.svd = norm
+                ind.size = len(ind)
         map(calcFitness, vValues, atlas)            
 
         nRet = 3
         if len(atlas) < nRet:
             nRet = len(atlas)
         best = tools.selSPEA2(atlas, nRet)
-	retlist = [ind for ind in best if ind.fitness.values[0] < 1]
-	if not retlist:
-	   return best
-	else:
-	   return retlist
+    retlist = [ind for ind in best if ind.fitness.values[0] < 1]
+    if not retlist:
+       return best
+    else:
+       return retlist
     selected = sum(map(selParetoRank, s, V), [])
     
     #Discard Duplicates
@@ -115,6 +117,10 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
     
     Calculates fitness of mappings in atlas
     """
+    invalid_ind = [ind for ind in sum(atlases, []) if ind.charac is None]    
+    invalid_primTree = [gp.PrimitiveTree(ind) for ind in invalid_ind]
+    calculations = toolbox.multiMap(toolbox.evalMapping, invalid_primTree)
+
     
     widgets = ['Evolving: ', Percentage(), ' ', 
                Bar(marker='#', left='[',right=']'),
@@ -130,7 +136,7 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
 
     #Generate population of migrants to allow transfer between atlases
     migrants = []
-    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
     
     pbar = ProgressBar(widgets=widgets, maxval=ngen+1)
     pbar.start() 
@@ -139,7 +145,7 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
         
         #Evaluate fitness and pareto fronts for the generation
         #nevals += sum(toolbox.map(toolbox.evalCRS, atlases))
-        nevals += toolbox.evalCRS(sum(atlases, []))
+        nevals += assignValues(invalid_ind, calculations)
         #filter invalid mappings out so that SVD can be done:
         def filterInd(individual):
             validCharac = np.isfinite(individual.charac['characteristic'].sum())
@@ -153,7 +159,7 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             adaptiveMinDiv = True
         else:
             minDivList = [ minDiv for atlas in atlases]
-                
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
         if adaptiveMinDiv:
             minDiv = 1 - 10**( - paretoN**a / b)
             minDivList = [1 - 10**( - paretoN**a / b) for atlas in atlases]
@@ -179,7 +185,8 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             ind.shift = None
             del ind.fitness.values
             return ind
-        invalid_ind = [newInd(ind) for ind in migrants if not ind.fitness.valid]
+        
+        [newInd(ind) for ind in migrants if not ind.fitness.valid]
 
         #create new atlases and mutate migrants:
         def nextGen(selected):
@@ -193,14 +200,20 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
                 halloffame.update(selected)
             
             return removeDuplicates(selected + offspring)
+        
         atlases =  toolbox.map(nextGen, selectedAtlases)
+        
+        
+        invalid_ind = [ind for ind in sum(atlases, []) if ind.charac is None]    
+        invalid_primTree = [gp.PrimitiveTree(ind) for ind in invalid_ind]
+        calculations = toolbox.multiMap(toolbox.evalMapping, invalid_primTree)
 
         record = stats.compile(sum(selectedAtlases, [])) if stats else {}
         logbook.record(gen=gen, nevals=nevals, natlas=map(len, selectedAtlases), **record)
 
         if verbose:
             print logbook.stream
-	    print 'new Atlases', map(len, atlases)
+        print 'new Atlases', map(len, atlases)
             
         if checkpoint is not None and gen % freq == 0:
             os.chdir(checkpoint)
@@ -215,10 +228,10 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             lastcheckpoint = gen
         elif lastcheckpoint is not None:
             print "Last checkpointed at generation %.i" % lastcheckpoint + ' in ' + checkpoint + '/' + filename
-	print ''
+        print ''
         pbar.update(gen)
         print ''     
- 	print ''   
+        print ''   
     pbar.finish()
             
     return paretos, logbook
@@ -459,17 +472,17 @@ def varAnd(population, toolbox, cxpb, mutpb):
 
 #    print 'mutate', len(offspring)
     for mutator, probability in mutpb.iteritems():
-#	print mutator.__name__, len(offspring)
-	def mutateInd(ind, mut, pb):
-	    if random.random() < pb:
-	        ind, = mut(ind)
-		del ind.fitness.values
-	        ind.charac = None
-	    return ind
-	offspring = [ mutateInd(ind, mutator, probability) for ind in offspring[:] ]
+#    print mutator.__name__, len(offspring)
+        def mutateInd(ind, mut, pb):
+            if random.random() < pb:
+                ind, = mut(ind)
+                del ind.fitness.values
+                ind.charac = None
+            return ind
+        offspring = [ mutateInd(ind, mutator, probability) for ind in offspring[:] ]
 #        for i in range(len(offspring)):
-#	    print i
-#	    print str(offspring[i])[:20]
+#        print i
+#        print str(offspring[i])[:20]
 #            if random.random() < probability:
 #                offspring[i], = mutator(offspring[i])
 #                del offspring[i].fitness.values
