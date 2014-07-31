@@ -89,11 +89,12 @@ def selectSVD(atlas, minDiv=1e-2):
         if len(atlas) < nRet:
             nRet = len(atlas)
         best = tools.selSPEA2(atlas, nRet)
-    retlist = [ind for ind in best if ind.fitness.values[0] < 1]
-    if not retlist:
-       return best
-    else:
-       return retlist
+        retlist = [ind for ind in best if ind.fitness.values[0] < 1]
+        if not retlist:
+            return best
+        else:
+            return retlist
+
     selected = sum(map(selParetoRank, s, V), [])
     
     #Discard Duplicates
@@ -145,7 +146,9 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
         
         #Evaluate fitness and pareto fronts for the generation
         #nevals += sum(toolbox.map(toolbox.evalCRS, atlases))
-        nevals += assignValues(invalid_ind, calculations)
+	print 'calc'
+        nevals += assignValues(invalid_ind, list(calculations))
+	print 'calc end'
         #filter invalid mappings out so that SVD can be done:
         def filterInd(individual):
             validCharac = np.isfinite(individual.charac['characteristic'].sum())
@@ -159,12 +162,13 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
             adaptiveMinDiv = True
         else:
             minDivList = [ minDiv for atlas in atlases]
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+
         if adaptiveMinDiv:
             minDiv = 1 - 10**( - paretoN**a / b)
             minDivList = [1 - 10**( - paretoN**a / b) for atlas in atlases]
-       
+        print 'filter'
         selectedAtlases = list(toolbox.map(lambda atlas, minD: selectSVD(atlas, minD), atlases, minDivList))
+	print 'selected'
         # Match size of migrants to pareto fronts
         paretoN = sum(map(len, selectedAtlases))
         while paretoN > len(migrants) or len(atlases) * minSize > len(migrants):
@@ -178,6 +182,7 @@ def eaParetosSVD(atlases, toolbox, cxpb, mutpb, ngen, minDiv,
         swap(selected, migrants)
         # Vary the pool of individuals    
         migrants = varAnd(migrants, toolbox, cxpb, mutpb)
+	print 'migrants'
         #Invalidate mutated individuals
         def newInd(ind):
             ind.charac = None
