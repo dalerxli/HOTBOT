@@ -120,38 +120,6 @@ def evalSVD(atlas):
     return U, s, V
     
 if __name__ == '__main__':
-<<<<<<< HEAD
-	
-	with open(domainFile, 'rb') as f:
-		#domain = cPickle.load(f)
-		pass
-
-	pickle = findMostRecent(store)
-
-	directory, pickleFile = os.path.split(pickle)
-
-	print directory, pickleFile
-	print os.listdir(directory)
-
-
-	with open(pickle, 'rb') as f:
-		cp = cPickle.load(f)
-
-	atlases = cp['atlases']
-	logbook = cp['logbook']
-	atlas = sum(atlases, [])
-	unique = removeDuplicates(atlas)
-	robustInd = [ind for ind in unique if ind.robustness/ind.domainSD < 0.3]
-	robustList = [ind.robustness/ind.domainSD for ind in robustInd]	
-	good = [ind for ind in robustInd if ind.shift/ind.robustness > 1.5]	
-	
-	print len(robustInd), len(atlas)
-	print pickle
-	print 'evals', logbook[-1]['nevals']
-	print logbook[-1]['natlas']
-	print 'gen', logbook[-1]['gen']
-	print 'good', len(good)
-=======
     
 #    with open(domainFile, 'rb') as f:
         #domain = cPickle.load(f)
@@ -180,4 +148,3 @@ if __name__ == '__main__':
     robustList = [ind.robustness/ind.domainSD for ind in robustInd]    
     
     good = [ind for ind in atlas if all((shift(ind) > 2, robust(ind) < 0.3))]
->>>>>>> cd86f6844cb736942ed5b0afdf49c98ff174984c
