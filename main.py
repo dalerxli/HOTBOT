@@ -39,7 +39,7 @@ seedFile = '/home/mg542/Source/HOTBOT/seed.pkl'
 psetFile = '/home/mg542/Source/HOTBOT/pset.pkl'
 store = '/sharedscratch/mg542/store'
 #store = '/scratch/mg542/store'
-atlasesFile = '/sharedscratch/mg542/store/2014-07-21T13:09:12/57-10:28:42.pkl'
+atlasesFile = '/sharedscratch/mg542/store/2014-07-22T12:16:46/58-16:10:47.pkl'
 #atlasesFile = None
 
 nAtlases = 2

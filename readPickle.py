@@ -107,26 +107,14 @@ if __name__ == '__main__':
 	atlases = cp['atlases']
 	logbook = cp['logbook']
 	atlas = sum(atlases, [])
-	import time
-	t0 = time.time()
 	unique = removeDuplicates(atlas)
-	t1 = time.time()
-	for ind in sum(atlases, []):
-		shift, robust, SD = ind.shift, ind.robustness, ind.domainSD
-		if robust/SD < 1.:
-			print shift, robust, SD
-			print shift/robust, robust/SD
-			print ''
-	robustInd = [ind for ind in atlas if ind.robustness/ind.domainSD < 0.3]
+	robustInd = [ind for ind in unique if ind.robustness/ind.domainSD < 0.3]
 	robustList = [ind.robustness/ind.domainSD for ind in robustInd]	
+	good = [ind for ind in robustInd if ind.shift/ind.robustness > 1.5]	
 	
 	print len(robustInd), len(atlas)
 	print pickle
-	print t1 - t0
-	#print logbook[-1]
-	#import time
-	#t0 = time.time()
-	#for ind in atlases[0]:
-#		mapping = gp.compile(ind, pset)
-		#c = domain.evalCharacteristics(mapping)
-#	print time.time()-t0
+	print 'evals', logbook[-1]['nevals']
+	print logbook[-1]['natlas']
+	print 'gen', logbook[-1]['gen']
+	print 'good', len(good)
