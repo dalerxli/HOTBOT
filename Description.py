@@ -64,6 +64,19 @@ class Mesh(np.ndarray):
         obj = np.asarray(input_array, dtype = np.float).view(cls)
         return obj    
 
+def meshFind(positions, gridsize):
+    Xpos = positions[:,0]
+    Ypos = positions[:,1]
+    maxX, minX = np.max(Xpos), np.min(Xpos)
+    maxY, minY = np.max(Ypos), np.min(Ypos)
+    gridsize = float(gridsize)
+    nX = int((maxX-minX)/gridsize) + 3
+    nY = int((maxY-minY)/gridsize) + 3
+    center = (maxX+minX)/2., (maxY+minY)/2.
+    extentX = center[0] - nX*gridsize/2., center[0] + nX*gridsize/2.
+    extentY = center[1] - nY*gridsize/2., center[1] + nY*gridsize/2.
+    return extentX + extentY + (gridsize,)
+
 def findMesh(state, gridsize):
     #this calculates an appropriate mesh for a given state
     positions = state[0]['position']

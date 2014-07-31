@@ -68,6 +68,7 @@ operators = [[np.multiply, (float, float,), float],
 specific_operators = [
                       [np.dot, [Vector, Vector, ], float],
                       [np.dot, [Vector, Position, ], float],
+                      [meshFind, [CellPositions, float], Mesh ]
                       #[np.dot, [CellVectors, Position, ], CellStates],
                       #[np.dot, [Vector, CellPositions, ], CellStates],
                       #[np.dot, [CellVectors, CellPositions, ], CellStates],
@@ -83,10 +84,6 @@ specific_operators = [
                       [lVectorX, [CellPositions, ], CellStates],
                       [lVectorY, [CellPositions, ], CellStates],
                       [lVectorZ, [CellPositions, ], CellStates],
-                      [np.sum, [CellStates, ], float],
-                      [sumVector, [CellVectors,], Vector],
-                      [sumVector, [CellPositions,], Position],
-                      [if_then_else, [bool, float, float,], float],
                       [NumberField, [CellPositions, CellStates, Mesh], NumberField],
                       [NumberField, [CellPositions, CellStates, Mesh, CellTypes, CellType], NumberField],
                       [Density, [CellPositions, Mesh,], Density],
@@ -114,9 +111,6 @@ specific_operators = [
                       [nematicOrder, [CellPositions, CellVectors, Mesh, CellTypes, CellType], NumberField],
                       [adfContour, [CellPositions, Mesh,], Contour],
                       [adfContour, [CellPositions, Mesh, CellTypes, CellType], Contour],
-                      # [momentFloat, [CellStates, int], float],
-                      # [momentVector, [CellVectors, int], vector],
-                      # [momentPosition, [CellPositions, int], Position],
                       ]
 
 terminals = [[True, bool],
