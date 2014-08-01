@@ -68,7 +68,7 @@ operators = [[np.multiply, (float, float,), float],
 specific_operators = [
                       [np.dot, [Vector, Vector, ], float],
                       [np.dot, [Vector, Position, ], float],
-                      [meshFind, [CellPositions, float], Mesh ]
+                      [meshFind, [CellPositions, float], Mesh ],
                       #[np.dot, [CellVectors, Position, ], CellStates],
                       #[np.dot, [Vector, CellPositions, ], CellStates],
                       #[np.dot, [CellVectors, CellPositions, ], CellStates],
